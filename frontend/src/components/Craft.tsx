@@ -8,44 +8,24 @@ import {
   Tab,
   Box,
   Button,
-  TextField,
   Paper,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  CircularProgress,
-  Grid,
-  Divider,
-  Card,
-  CardContent,
-  CardHeader,
-  Stepper,
-  Step,
-  StepLabel,
-  Chip
+  TextField
 } from '@material-ui/core';
-import { Add as AddIcon, Refresh as RefreshIcon, Check as CheckIcon, Warning as WarningIcon } from '@material-ui/icons';
+import { Add as AddIcon, Check as CheckIcon } from '@material-ui/icons';
 import { Link } from 'react-router-dom';
+import { useDocumentSections } from '../hooks/useDocumentSections';
+import { DocumentInfo, SectionData } from '../types/document.types';
+import DocumentLookup from './DocumentLookup';
+import SectionWorkflow from './SectionWorkflow';
 
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
-}
-
-interface SectionData {
-  notes: string;
-  outline: string;
-  draft: string;
-  reviewNotes: string;
-}
-
-interface DocumentSection {
-  id: string;
-  name: string;
-  data: SectionData;
-  isCompleted: boolean;
 }
 
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
@@ -56,300 +36,42 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
   );
 };
 
-const FormattedDocument: React.FC<{ content: string; title: string }> = ({ content, title }) => {
-  const formatContent = (text: string) => {
-    return text.split('\n').map((paragraph, index) => {
-      if (paragraph.trim() === '') return null;
-      
-      // Remove any [Generated...] markers
-      const cleanParagraph = paragraph.replace(/\[.*?\]/g, '').trim();
-      if (!cleanParagraph) return null;
-      
-      return (
-        <Typography
-          key={index}
-          variant="body1"
-          paragraph
-          style={{
-            lineHeight: 1.8,
-            marginBottom: '1rem',
-            textAlign: 'justify',
-            fontSize: '16px'
-          }}
-        >
-          {cleanParagraph}
-        </Typography>
-      );
-    });
-  };
-
-  return (
-    <Card elevation={3} style={{ marginTop: '2rem' }}>
-      <CardHeader
-        title={
-          <Box display="flex" alignItems="center">
-            <CheckIcon color="primary" style={{ marginRight: '0.5rem' }} />
-            <Typography variant="h5">Final Document: {title}</Typography>
-          </Box>
-        }
-        subheader="Completed and ready for use"
-        style={{ backgroundColor: '#f5f5f5' }}
-      />
-      <CardContent style={{ padding: '2rem' }}>
-        <Paper elevation={1} style={{ padding: '2rem', backgroundColor: '#fafafa' }}>
-          <Typography variant="h4" gutterBottom style={{ marginBottom: '2rem', textAlign: 'center', color: '#1976d2' }}>
-            {title}
-          </Typography>
-          <Divider style={{ marginBottom: '2rem' }} />
-          {formatContent(content)}
-        </Paper>
-      </CardContent>
-    </Card>
-  );
-};
-
-const DocumentInfo: React.FC<{ data: { [key: string]: string } }> = ({ data }) => {
-  return (
-    <Card elevation={2} style={{ marginTop: '2rem' }}>
-      <CardHeader
-        title={
-          <Box display="flex" alignItems="center">
-            <CheckIcon color="primary" style={{ marginRight: '0.5rem' }} />
-            <Typography variant="h5">Document Information</Typography>
-          </Box>
-        }
-        subheader="Retrieved from database"
-        style={{ backgroundColor: '#f0f7ff' }}
-      />
-      <CardContent>
-        <Grid container spacing={3}>
-          {Object.entries(data).map(([field, value], index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
-              <Paper elevation={1} style={{ padding: '1rem', height: '100%' }}>
-                <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                  {field}
-                </Typography>
-                <Typography variant="body1" style={{ fontWeight: 500 }}>
-                  {value}
-                </Typography>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
-      </CardContent>
-    </Card>
-  );
-};
-
 const Craft: React.FC = () => {
   const [currentTab, setCurrentTab] = useState(0);
-  const [isProcessing, setIsProcessing] = useState<{ [key: string]: boolean }>({});
   const [addTabDialog, setAddTabDialog] = useState(false);
   const [newTabName, setNewTabName] = useState('');
-  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [documentData, setDocumentData] = useState<DocumentInfo | null>(null);
   
-  // Home tab state
-  const [documentId, setDocumentId] = useState('');
-  const [documentData, setDocumentData] = useState<{ [key: string]: string } | null>(null);
-
-  const [sections, setSections] = useState<DocumentSection[]>([
-    { id: '1', name: 'Introduction', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
-    { id: '2', name: 'Background', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
-    { id: '3', name: 'Usage', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
-    { id: '4', name: 'Conclusion', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false }
-  ]);
+  const {
+    sections,
+    updateSectionData,
+    toggleSectionCompletion,
+    addSection
+  } = useDocumentSections();
 
   const handleTabChange = (event: React.ChangeEvent<{}>, newValue: number) => {
-    if (newValue === sections.length + 1) { // +1 because Home tab is now first
+    if (newValue === sections.length + 1) {
       setAddTabDialog(true);
     } else {
       setCurrentTab(newValue);
     }
   };
 
-  const lookupDocument = async () => {
-    if (!documentId.trim()) return;
-
-    setProcessing('lookup', true);
-    try {
-      const response = await fetch('http://localhost:8888/api/document-lookup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: documentId })
-      });
-      const result = await response.json();
-      
-      if (response.ok) {
-        setDocumentData(result.data);
-      } else {
-        console.error('Error looking up document:', result.error);
-        setDocumentData(null);
-      }
-    } catch (error) {
-      console.error('Error looking up document:', error);
-      setDocumentData(null);
-    } finally {
-      setProcessing('lookup', false);
-    }
-  };
-
   const handleAddTab = () => {
     if (newTabName.trim()) {
-      const newSection: DocumentSection = {
-        id: Date.now().toString(),
-        name: newTabName.trim(),
-        data: { notes: '', outline: '', draft: '', reviewNotes: '' },
-        isCompleted: false
-      };
-      setSections([...sections, newSection]);
-      setCurrentTab(sections.length + 1); // +1 because Home tab is index 0
+      addSection(newTabName);
+      setCurrentTab(sections.length + 1);
       setNewTabName('');
     }
     setAddTabDialog(false);
   };
 
-  const toggleSectionCompletion = (sectionId: string) => {
-    const updatedSections = sections.map(section => 
-      section.id === sectionId 
-        ? { ...section, isCompleted: !section.isCompleted }
-        : section
-    );
-    setSections(updatedSections);
+  const handleSectionUpdate = (sectionId: string, field: keyof SectionData, value: string) => {
+    updateSectionData(sectionId, field, value);
   };
 
-  const updateSectionData = (field: keyof SectionData, value: string) => {
-    // Since Home tab is index 0, section tabs start at index 1
-    const sectionIndex = currentTab - 1;
-    if (sectionIndex < 0 || sectionIndex >= sections.length) return;
-    
-    const updatedSections = sections.map(section => 
-      section.id === sections[sectionIndex].id 
-        ? { ...section, data: { ...section.data, [field]: value } }
-        : section
-    );
-    setSections(updatedSections);
-  };
-
-  const setProcessing = (operation: string, status: boolean) => {
-    setIsProcessing(prev => ({ ...prev, [operation]: status }));
-  };
-
-  const getActiveStepForSection = (section: DocumentSection): number => {
-    const sectionId = section.id;
-    // Only show active state for focused field
-    if (focusedField === `notes-${sectionId}`) return 0;
-    if (focusedField === `outline-${sectionId}`) return 1;
-    if (focusedField === `draft-${sectionId}` || focusedField === `review-${sectionId}`) return 2;
-    return -1; // No step is active
-  };
-
-  const getCompletedSteps = (section: DocumentSection): number[] => {
-    const { outline, draft } = section.data;
-    const completed = [];
-    
-    // Step 0 is completed if step 1 (outline) has content
-    if (outline.trim()) completed.push(0);
-    // Step 1 is completed if step 2 (draft) has content  
-    if (draft.trim()) completed.push(1);
-    // Step 2 is always in progress if draft exists (cyclical)
-    
-    return completed;
-  };
-
-  const steps = ['Notes', 'Draft Outline', 'Draft & Review Cycle'];
-
-  const generateOutline = async () => {
-    const sectionIndex = currentTab - 1;
-    if (sectionIndex < 0 || sectionIndex >= sections.length) return;
-    const currentSection = sections[sectionIndex];
-    if (!currentSection.data.notes.trim()) return;
-
-    setProcessing('outline', true);
-    try {
-      const response = await fetch('http://localhost:8888/api/generate-outline', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notes: currentSection.data.notes })
-      });
-      const result = await response.json();
-      updateSectionData('outline', result.outline);
-    } catch (error) {
-      console.error('Error generating outline:', error);
-    } finally {
-      setProcessing('outline', false);
-    }
-  };
-
-  const generateDraftFromOutline = async () => {
-    const sectionIndex = currentTab - 1;
-    if (sectionIndex < 0 || sectionIndex >= sections.length) return;
-    const currentSection = sections[sectionIndex];
-    if (!currentSection.data.outline.trim()) return;
-
-    setProcessing('draft-outline', true);
-    try {
-      const response = await fetch('http://localhost:8888/api/generate-draft-from-outline', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          notes: currentSection.data.notes,
-          outline: currentSection.data.outline 
-        })
-      });
-      const result = await response.json();
-      updateSectionData('draft', result.draft);
-    } catch (error) {
-      console.error('Error generating draft:', error);
-    } finally {
-      setProcessing('draft-outline', false);
-    }
-  };
-
-  const generateReview = async () => {
-    const sectionIndex = currentTab - 1;
-    if (sectionIndex < 0 || sectionIndex >= sections.length) return;
-    const currentSection = sections[sectionIndex];
-    if (!currentSection.data.draft.trim()) return;
-
-    setProcessing('review', true);
-    try {
-      const response = await fetch('http://localhost:8888/api/generate-review', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ draft: currentSection.data.draft })
-      });
-      const result = await response.json();
-      updateSectionData('reviewNotes', result.review);
-    } catch (error) {
-      console.error('Error generating review:', error);
-    } finally {
-      setProcessing('review', false);
-    }
-  };
-
-  const generateDraftFromReview = async () => {
-    const sectionIndex = currentTab - 1;
-    if (sectionIndex < 0 || sectionIndex >= sections.length) return;
-    const currentSection = sections[sectionIndex];
-    if (!currentSection.data.draft.trim() || !currentSection.data.reviewNotes.trim()) return;
-
-    setProcessing('draft-review', true);
-    try {
-      const response = await fetch('http://localhost:8888/api/generate-draft-from-review', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          draft: currentSection.data.draft,
-          reviewNotes: currentSection.data.reviewNotes 
-        })
-      });
-      const result = await response.json();
-      updateSectionData('draft', result.draft);
-    } catch (error) {
-      console.error('Error revising draft:', error);
-    } finally {
-      setProcessing('draft-review', false);
-    }
+  const handleDocumentFound = (data: DocumentInfo) => {
+    setDocumentData(data);
   };
 
   return (
@@ -357,7 +79,7 @@ const Craft: React.FC = () => {
       <AppBar position="static">
         <Toolbar>
           <Typography variant="h6" style={{ flexGrow: 1 }}>
-            CRAFT - Review Report Assistant
+            CRAFT - Document Planning & Drafting
           </Typography>
           <Button color="inherit" component={Link} to="/about">
             About
@@ -388,7 +110,7 @@ const Craft: React.FC = () => {
                 </Box>
               }
             />
-            {sections.map((section, index) => (
+            {sections.map((section) => (
               <Tab 
                 key={section.id} 
                 label={
@@ -411,284 +133,17 @@ const Craft: React.FC = () => {
             />
           </Tabs>
           
-          {/* Home Tab */}
           <TabPanel value={currentTab} index={0}>
-            <Typography variant="h4" gutterBottom align="center" style={{ marginBottom: '2rem' }}>
-              Document Lookup
-            </Typography>
-            
-            <Card>
-              <CardHeader
-                title="Enter Document ID"
-                subheader="Retrieve document information from the database"
-              />
-              <CardContent>
-                <Box display="flex" alignItems="center" mb={2}>
-                  <TextField
-                    fullWidth
-                    variant="outlined"
-                    label="Document ID"
-                    value={documentId}
-                    onChange={(e) => setDocumentId(e.target.value)}
-                    placeholder="Enter document ID to lookup information..."
-                    onKeyPress={(e) => e.key === 'Enter' && lookupDocument()}
-                    style={{ marginRight: '1rem' }}
-                  />
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={lookupDocument}
-                    disabled={!documentId.trim() || isProcessing.lookup}
-                    style={{ height: '56px' }}
-                  >
-                    {isProcessing.lookup ? (
-                      <>
-                        <CircularProgress size={20} style={{ marginRight: '0.5rem' }} />
-                        Looking up...
-                      </>
-                    ) : (
-                      'Lookup Document'
-                    )}
-                  </Button>
-                </Box>
-              </CardContent>
-            </Card>
-
-            {documentData && <DocumentInfo data={documentData} />}
+            <DocumentLookup onDocumentFound={handleDocumentFound} />
           </TabPanel>
 
           {sections.map((section, index) => (
             <TabPanel key={section.id} value={currentTab} index={index + 1}>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="h4" gutterBottom>
-                  {section.name}
-                </Typography>
-                <Box>
-                  {!section.data.draft.trim() && (
-                    <Chip
-                      icon={<WarningIcon style={{ fontSize: '18px' }} />}
-                      label="Draft required to complete"
-                      color="secondary"
-                      variant="outlined"
-                      style={{ 
-                        marginRight: '1rem',
-                        backgroundColor: '#fff3e0',
-                        borderColor: '#ff9800',
-                        color: '#e65100',
-                        paddingLeft: '8px'
-                      }}
-                    />
-                  )}
-                  <Button
-                    variant={section.isCompleted ? "outlined" : "contained"}
-                    color={section.isCompleted ? "secondary" : "primary"}
-                    onClick={() => toggleSectionCompletion(section.id)}
-                    disabled={!section.data.draft.trim()}
-                    startIcon={section.isCompleted ? undefined : <CheckIcon />}
-                    size="large"
-                  >
-                    {section.isCompleted ? 'Reopen Section' : 'Mark Complete'}
-                  </Button>
-                </Box>
-              </Box>
-
-              {/* Progress Stepper - Only show if not completed */}
-              {!section.isCompleted && (
-                <Box mb={4}>
-                  <Stepper activeStep={getActiveStepForSection(section)} alternativeLabel>
-                    {steps.map((label, index) => (
-                      <Step key={label} completed={getCompletedSteps(section).includes(index)}>
-                        <StepLabel>{label}</StepLabel>
-                      </Step>
-                    ))}
-                  </Stepper>
-                </Box>
-              )}
-
-              {/* Show workflow steps if not completed */}
-              {!section.isCompleted ? (
-                <>
-                  {/* Step 1: Notes */}
-                  <Card style={{ marginBottom: '1.5rem' }}>
-                    <CardHeader 
-                      title="Step 1: Notes" 
-                      subheader="Write your initial thoughts and ideas"
-                    />
-                    <CardContent>
-                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                        <Typography variant="h6">
-                          Notes
-                        </Typography>
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          onClick={generateOutline}
-                          disabled={!section.data.notes.trim() || isProcessing.outline}
-                          size="small"
-                        >
-                          {isProcessing.outline ? (
-                            <>
-                              <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
-                              Generating...
-                            </>
-                          ) : (
-                            'Generate Outline →'
-                          )}
-                        </Button>
-                      </Box>
-                      <TextField
-                        fullWidth
-                        multiline
-                        rows={6}
-                        variant="outlined"
-                        value={section.data.notes}
-                        onChange={(e) => updateSectionData('notes', e.target.value)}
-                        onFocus={() => setFocusedField(`notes-${section.id}`)}
-                        onBlur={() => setFocusedField(null)}
-                        placeholder="Enter your notes and initial thoughts here..."
-                        disabled={section.isCompleted}
-                      />
-                    </CardContent>
-                  </Card>
-
-                  {/* Step 2: Outline */}
-                  <Card style={{ marginBottom: '1.5rem' }}>
-                    <CardHeader 
-                      title="Step 2: Draft Outline" 
-                      subheader="Structure your document outline"
-                    />
-                    <CardContent>
-                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                        <Typography variant="h6">
-                          Outline
-                        </Typography>
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          onClick={generateDraftFromOutline}
-                          disabled={!section.data.outline.trim() || isProcessing['draft-outline']}
-                          size="small"
-                        >
-                          {isProcessing['draft-outline'] ? (
-                            <>
-                              <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
-                              Generating...
-                            </>
-                          ) : (
-                            'Generate Draft →'
-                          )}
-                        </Button>
-                      </Box>
-                      <TextField
-                        fullWidth
-                        multiline
-                        rows={6}
-                        variant="outlined"
-                        value={section.data.outline}
-                        onChange={(e) => updateSectionData('outline', e.target.value)}
-                        onFocus={() => setFocusedField(`outline-${section.id}`)}
-                        onBlur={() => setFocusedField(null)}
-                        placeholder="Your outline will appear here, or write it manually..."
-                        disabled={section.isCompleted}
-                      />
-                    </CardContent>
-                  </Card>
-
-                  {/* Step 3: Draft & Review Cycle */}
-                  <Card>
-                    <CardHeader 
-                      title="Step 3: Draft & Review Cycle" 
-                      subheader="Iterate between draft and review to improve your content"
-                    />
-                    <CardContent>
-                      <Grid container spacing={3}>
-                        <Grid item xs={12} md={6}>
-                          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                            <Typography variant="h6">
-                              Draft
-                            </Typography>
-                            <Button
-                              variant="outlined"
-                              color="primary"
-                              onClick={generateReview}
-                              disabled={!section.data.draft.trim() || isProcessing.review}
-                              size="small"
-                            >
-                              {isProcessing.review ? (
-                                <>
-                                  <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
-                                  Analyzing...
-                                </>
-                              ) : (
-                                'Generate Review →'
-                              )}
-                            </Button>
-                          </Box>
-                          <TextField
-                            fullWidth
-                            multiline
-                            rows={12}
-                            variant="outlined"
-                            value={section.data.draft}
-                            onChange={(e) => updateSectionData('draft', e.target.value)}
-                            onFocus={() => setFocusedField(`draft-${section.id}`)}
-                            onBlur={() => setFocusedField(null)}
-                            placeholder="Your draft content will appear here, or write it manually..."
-                            disabled={section.isCompleted}
-                          />
-                        </Grid>
-
-                        <Grid item xs={12} md={6}>
-                          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                            <Typography variant="h6">
-                              Review & Feedback
-                            </Typography>
-                            <Button
-                              variant="contained"
-                              color="secondary"
-                              onClick={generateDraftFromReview}
-                              disabled={!section.data.draft.trim() || !section.data.reviewNotes.trim() || isProcessing['draft-review']}
-                              startIcon={<RefreshIcon />}
-                              size="small"
-                            >
-                              {isProcessing['draft-review'] ? (
-                                <>
-                                  <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
-                                  Revising...
-                                </>
-                              ) : (
-                                '← Apply & Update Draft'
-                              )}
-                            </Button>
-                          </Box>
-                          <TextField
-                            fullWidth
-                            multiline
-                            rows={12}
-                            variant="outlined"
-                            value={section.data.reviewNotes}
-                            onChange={(e) => updateSectionData('reviewNotes', e.target.value)}
-                            onFocus={() => setFocusedField(`review-${section.id}`)}
-                            onBlur={() => setFocusedField(null)}
-                            placeholder="Review suggestions will appear here, or write your own feedback..."
-                            disabled={section.isCompleted}
-                          />
-                        </Grid>
-                      </Grid>
-                      
-                      <Box mt={3}>
-                        <Divider />
-                        <Typography variant="body2" color="textSecondary" style={{ marginTop: '1rem', fontStyle: 'italic' }}>
-                          💡 Tip: This is a cyclical process. Generate reviews, apply feedback, and repeat to continuously improve your draft.
-                        </Typography>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </>
-              ) : (
-                /* Show formatted document view when completed */
-                <FormattedDocument content={section.data.draft} title={section.name} />
-              )}
+              <SectionWorkflow
+                section={section}
+                onSectionUpdate={handleSectionUpdate}
+                onToggleCompletion={toggleSectionCompletion}
+              />
             </TabPanel>
           ))}
         </Paper>
