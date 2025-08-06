@@ -108,12 +108,49 @@ const FormattedDocument: React.FC<{ content: string; title: string }> = ({ conte
   );
 };
 
+const DocumentInfo: React.FC<{ data: { [key: string]: string } }> = ({ data }) => {
+  return (
+    <Card elevation={2} style={{ marginTop: '2rem' }}>
+      <CardHeader
+        title={
+          <Box display="flex" alignItems="center">
+            <CheckIcon color="primary" style={{ marginRight: '0.5rem' }} />
+            <Typography variant="h5">Document Information</Typography>
+          </Box>
+        }
+        subheader="Retrieved from database"
+        style={{ backgroundColor: '#f0f7ff' }}
+      />
+      <CardContent>
+        <Grid container spacing={3}>
+          {Object.entries(data).map(([field, value], index) => (
+            <Grid item xs={12} sm={6} md={4} key={index}>
+              <Paper elevation={1} style={{ padding: '1rem', height: '100%' }}>
+                <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                  {field}
+                </Typography>
+                <Typography variant="body1" style={{ fontWeight: 500 }}>
+                  {value}
+                </Typography>
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
+      </CardContent>
+    </Card>
+  );
+};
+
 const Craft: React.FC = () => {
   const [currentTab, setCurrentTab] = useState(0);
   const [isProcessing, setIsProcessing] = useState<{ [key: string]: boolean }>({});
   const [addTabDialog, setAddTabDialog] = useState(false);
   const [newTabName, setNewTabName] = useState('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  
+  // Home tab state
+  const [documentId, setDocumentId] = useState('');
+  const [documentData, setDocumentData] = useState<{ [key: string]: string } | null>(null);
 
   const [sections, setSections] = useState<DocumentSection[]>([
     { id: '1', name: 'Introduction', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
@@ -123,10 +160,36 @@ const Craft: React.FC = () => {
   ]);
 
   const handleTabChange = (event: React.ChangeEvent<{}>, newValue: number) => {
-    if (newValue === sections.length) {
+    if (newValue === sections.length + 1) { // +1 because Home tab is now first
       setAddTabDialog(true);
     } else {
       setCurrentTab(newValue);
+    }
+  };
+
+  const lookupDocument = async () => {
+    if (!documentId.trim()) return;
+
+    setProcessing('lookup', true);
+    try {
+      const response = await fetch('http://localhost:8888/api/document-lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: documentId })
+      });
+      const result = await response.json();
+      
+      if (response.ok) {
+        setDocumentData(result.data);
+      } else {
+        console.error('Error looking up document:', result.error);
+        setDocumentData(null);
+      }
+    } catch (error) {
+      console.error('Error looking up document:', error);
+      setDocumentData(null);
+    } finally {
+      setProcessing('lookup', false);
     }
   };
 
@@ -139,7 +202,7 @@ const Craft: React.FC = () => {
         isCompleted: false
       };
       setSections([...sections, newSection]);
-      setCurrentTab(sections.length);
+      setCurrentTab(sections.length + 1); // +1 because Home tab is index 0
       setNewTabName('');
     }
     setAddTabDialog(false);
@@ -155,8 +218,12 @@ const Craft: React.FC = () => {
   };
 
   const updateSectionData = (field: keyof SectionData, value: string) => {
+    // Since Home tab is index 0, section tabs start at index 1
+    const sectionIndex = currentTab - 1;
+    if (sectionIndex < 0 || sectionIndex >= sections.length) return;
+    
     const updatedSections = sections.map(section => 
-      section.id === sections[currentTab].id 
+      section.id === sections[sectionIndex].id 
         ? { ...section, data: { ...section.data, [field]: value } }
         : section
     );
@@ -192,7 +259,9 @@ const Craft: React.FC = () => {
   const steps = ['Notes', 'Draft Outline', 'Draft & Review Cycle'];
 
   const generateOutline = async () => {
-    const currentSection = sections[currentTab];
+    const sectionIndex = currentTab - 1;
+    if (sectionIndex < 0 || sectionIndex >= sections.length) return;
+    const currentSection = sections[sectionIndex];
     if (!currentSection.data.notes.trim()) return;
 
     setProcessing('outline', true);
@@ -212,7 +281,9 @@ const Craft: React.FC = () => {
   };
 
   const generateDraftFromOutline = async () => {
-    const currentSection = sections[currentTab];
+    const sectionIndex = currentTab - 1;
+    if (sectionIndex < 0 || sectionIndex >= sections.length) return;
+    const currentSection = sections[sectionIndex];
     if (!currentSection.data.outline.trim()) return;
 
     setProcessing('draft-outline', true);
@@ -235,7 +306,9 @@ const Craft: React.FC = () => {
   };
 
   const generateReview = async () => {
-    const currentSection = sections[currentTab];
+    const sectionIndex = currentTab - 1;
+    if (sectionIndex < 0 || sectionIndex >= sections.length) return;
+    const currentSection = sections[sectionIndex];
     if (!currentSection.data.draft.trim()) return;
 
     setProcessing('review', true);
@@ -255,7 +328,9 @@ const Craft: React.FC = () => {
   };
 
   const generateDraftFromReview = async () => {
-    const currentSection = sections[currentTab];
+    const sectionIndex = currentTab - 1;
+    if (sectionIndex < 0 || sectionIndex >= sections.length) return;
+    const currentSection = sections[sectionIndex];
     if (!currentSection.data.draft.trim() || !currentSection.data.reviewNotes.trim()) return;
 
     setProcessing('draft-review', true);
@@ -300,6 +375,19 @@ const Craft: React.FC = () => {
             variant="scrollable"
             scrollButtons="auto"
           >
+            <Tab 
+              label={
+                <Box display="flex" alignItems="center">
+                  <span>Home</span>
+                  {documentData && (
+                    <CheckIcon 
+                      color="primary" 
+                      style={{ marginLeft: '0.5rem', fontSize: '18px' }} 
+                    />
+                  )}
+                </Box>
+              }
+            />
             {sections.map((section, index) => (
               <Tab 
                 key={section.id} 
@@ -323,8 +411,54 @@ const Craft: React.FC = () => {
             />
           </Tabs>
           
+          {/* Home Tab */}
+          <TabPanel value={currentTab} index={0}>
+            <Typography variant="h4" gutterBottom align="center" style={{ marginBottom: '2rem' }}>
+              Document Lookup
+            </Typography>
+            
+            <Card>
+              <CardHeader
+                title="Enter Document ID"
+                subheader="Retrieve document information from the database"
+              />
+              <CardContent>
+                <Box display="flex" alignItems="center" mb={2}>
+                  <TextField
+                    fullWidth
+                    variant="outlined"
+                    label="Document ID"
+                    value={documentId}
+                    onChange={(e) => setDocumentId(e.target.value)}
+                    placeholder="Enter document ID to lookup information..."
+                    onKeyPress={(e) => e.key === 'Enter' && lookupDocument()}
+                    style={{ marginRight: '1rem' }}
+                  />
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={lookupDocument}
+                    disabled={!documentId.trim() || isProcessing.lookup}
+                    size="large"
+                  >
+                    {isProcessing.lookup ? (
+                      <>
+                        <CircularProgress size={20} style={{ marginRight: '0.5rem' }} />
+                        Looking up...
+                      </>
+                    ) : (
+                      'Lookup Document'
+                    )}
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+
+            {documentData && <DocumentInfo data={documentData} />}
+          </TabPanel>
+
           {sections.map((section, index) => (
-            <TabPanel key={section.id} value={currentTab} index={index}>
+            <TabPanel key={section.id} value={currentTab} index={index + 1}>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h4" gutterBottom>
                   {section.name}
@@ -332,7 +466,7 @@ const Craft: React.FC = () => {
                 <Box>
                   {!section.data.draft.trim() && (
                     <Chip
-                      icon={<WarningIcon />}
+                      icon={<WarningIcon style={{ fontSize: '18px' }} />}
                       label="Draft required to complete"
                       color="secondary"
                       variant="outlined"
@@ -340,7 +474,8 @@ const Craft: React.FC = () => {
                         marginRight: '1rem',
                         backgroundColor: '#fff3e0',
                         borderColor: '#ff9800',
-                        color: '#e65100'
+                        color: '#e65100',
+                        paddingLeft: '8px'
                       }}
                     />
                   )}

@@ -25,6 +25,81 @@ class HelloHandler(BaseHandler):
         self.write(json.dumps(response))
 
 
+class DocumentLookupHandler(BaseHandler):
+    def post(self):
+        try:
+            body = json.loads(self.request.body)
+            document_id = body.get('id', '')
+            
+            if not document_id.strip():
+                self.set_status(400)
+                self.write(json.dumps({"error": "Document ID is required"}))
+                return
+            
+            # Simulate database lookup with arbitrary data
+            document_data = self.get_document_data(document_id)
+            
+            response = {"data": document_data}
+            self.set_header("Content-Type", "application/json")
+            self.write(json.dumps(response))
+        except Exception as e:
+            self.set_status(500)
+            self.write(json.dumps({"error": str(e)}))
+    
+    def get_document_data(self, document_id):
+        # Simulate database lookup - replace with actual database query
+        import random
+        
+        # Generate different data based on ID for variety
+        data_variations = [
+            {
+                "Document Owner": "Sarah Johnson",
+                "Document Lead": "Michael Chen",
+                "Project Name": "Q4 Strategy Review",
+                "Department": "Strategy & Planning",
+                "Created Date": "2024-01-15",
+                "Last Modified": "2024-02-03",
+                "Status": "In Progress",
+                "Priority": "High",
+                "Reviewers": "Alice Smith, Bob Wilson",
+                "Document Type": "Strategic Plan"
+            },
+            {
+                "Document Owner": "Robert Davis",
+                "Document Lead": "Emma Thompson",
+                "Project Name": "Product Roadmap 2024",
+                "Department": "Product Management",
+                "Created Date": "2024-01-08",
+                "Last Modified": "2024-01-28",
+                "Status": "Under Review",
+                "Priority": "Medium",
+                "Reviewers": "David Kim, Lisa Brown",
+                "Document Type": "Roadmap",
+                "Target Audience": "Executive Team",
+                "Deadline": "2024-03-15"
+            },
+            {
+                "Document Owner": "Jennifer Lee",
+                "Document Lead": "Alex Rodriguez",
+                "Project Name": "Market Analysis Report",
+                "Department": "Business Intelligence",
+                "Created Date": "2024-01-22",
+                "Last Modified": "2024-02-01",
+                "Status": "Draft",
+                "Priority": "Low",
+                "Reviewers": "Mark Johnson",
+                "Document Type": "Analysis Report",
+                "Data Sources": "Internal Analytics, Market Research",
+                "Confidentiality": "Internal Only",
+                "Version": "2.1"
+            }
+        ]
+        
+        # Use document_id to determine which variation to return
+        variation_index = hash(document_id) % len(data_variations)
+        return data_variations[variation_index]
+
+
 class GenerateOutlineHandler(BaseHandler):
     def post(self):
         try:
@@ -164,6 +239,7 @@ class GenerateReviewHandler(BaseHandler):
 def make_app():
     return tornado.web.Application([
         (r"/api/hello", HelloHandler),
+        (r"/api/document-lookup", DocumentLookupHandler),
         (r"/api/generate-outline", GenerateOutlineHandler),
         (r"/api/generate-draft-from-outline", GenerateDraftFromOutlineHandler),
         (r"/api/generate-draft-from-review", GenerateDraftFromReviewHandler),
