@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { CssBaseline, ThemeProvider, createTheme } from '@material-ui/core';
-import Home from './components/Home';
+import Craft from './components/Craft';
 import About from './components/About';
 
 const theme = createTheme({
@@ -18,7 +18,7 @@ function App() {
       <CssBaseline />
       <Router>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Craft />} />
           <Route path="/about" element={<About />} />
         </Routes>
       </Router>

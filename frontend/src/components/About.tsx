@@ -17,7 +17,7 @@ const About: React.FC = () => {
       <AppBar position="static">
         <Toolbar>
           <Typography variant="h6" style={{ flexGrow: 1 }}>
-            Hello World App
+            Craft - Document Planning & Drafting
           </Typography>
           <Button color="inherit" component={Link} to="/">
             Home
@@ -29,10 +29,38 @@ const About: React.FC = () => {
         <Card elevation={3}>
           <CardContent>
             <Typography variant="h4" gutterBottom>
-              About This App
+              About Craft
             </Typography>
             <Typography variant="body1" paragraph>
-              This is a simple Hello World application built with:
+              Craft is a document planning and drafting website that helps you create structured documents through a 4-step workflow.
+            </Typography>
+            <Typography variant="h6" gutterBottom>
+              Features:
+            </Typography>
+            <ul>
+              <li>
+                <Typography variant="body2">
+                  <strong>Section-based Organization:</strong> Create documents with Introduction, Background, Usage, and Conclusion sections
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>Custom Sections:</strong> Add your own custom document sections as needed
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>4-Step Workflow:</strong> Progress through Notes → Draft Outline → Initial Draft → Review Notes
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>AI-Powered Processing:</strong> Each step can be enhanced with AI processing to generate outlines and drafts
+                </Typography>
+              </li>
+            </ul>
+            <Typography variant="h6" gutterBottom style={{ marginTop: '1rem' }}>
+              Built With:
             </Typography>
             <ul>
               <li>
@@ -42,7 +70,7 @@ const About: React.FC = () => {
               </li>
               <li>
                 <Typography variant="body2">
-                  <strong>Backend:</strong> Python with Tornado web framework
+                  <strong>Backend:</strong> Python with Tornado web framework for document processing
                 </Typography>
               </li>
             </ul>
