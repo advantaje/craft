@@ -7,7 +7,9 @@
       "Bash(npx create-react-app:*)",
       "Bash(git init:*)",
       "Bash(git config:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }
