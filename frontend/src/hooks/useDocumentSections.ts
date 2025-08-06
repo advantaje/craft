@@ -2,10 +2,10 @@ import { useState, useCallback } from 'react';
 import { DocumentSection, SectionData } from '../types/document.types';
 
 const DEFAULT_SECTIONS: DocumentSection[] = [
-  { id: '1', name: 'Introduction', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
-  { id: '2', name: 'Background', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
-  { id: '3', name: 'Usage', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
-  { id: '4', name: 'Conclusion', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false }
+  { id: '1', name: 'Introduction', type: 'introduction', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
+  { id: '2', name: 'Background', type: 'background', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
+  { id: '3', name: 'Usage', type: 'usage', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
+  { id: '4', name: 'Conclusion', type: 'conclusion', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false }
 ];
 
 export function useDocumentSections() {
@@ -39,6 +39,7 @@ export function useDocumentSections() {
     const newSection: DocumentSection = {
       id: Date.now().toString(),
       name: name.trim(),
+      type: 'custom', // Custom sections use generic prompts
       data: { notes: '', outline: '', draft: '', reviewNotes: '' },
       isCompleted: false
     };

@@ -60,7 +60,11 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
     
     setLoadingState('outline', true);
     try {
-      const result = await apiService.generateOutline({ notes: section.data.notes });
+      const result = await apiService.generateOutline({ 
+        notes: section.data.notes,
+        sectionName: section.name,
+        sectionType: section.type
+      });
       onSectionUpdate(section.id, 'outline', result.outline);
     } catch (error) {
       console.error('Error generating outline:', error);
@@ -76,7 +80,9 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
     try {
       const result = await apiService.generateDraftFromOutline({
         notes: section.data.notes,
-        outline: section.data.outline
+        outline: section.data.outline,
+        sectionName: section.name,
+        sectionType: section.type
       });
       onSectionUpdate(section.id, 'draft', result.draft);
     } catch (error) {
@@ -91,7 +97,11 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
     
     setLoadingState('review', true);
     try {
-      const result = await apiService.generateReview({ draft: section.data.draft });
+      const result = await apiService.generateReview({ 
+        draft: section.data.draft,
+        sectionName: section.name,
+        sectionType: section.type
+      });
       onSectionUpdate(section.id, 'reviewNotes', result.review);
     } catch (error) {
       console.error('Error generating review:', error);
@@ -107,7 +117,9 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
     try {
       const result = await apiService.generateDraftFromReview({
         draft: section.data.draft,
-        reviewNotes: section.data.reviewNotes
+        reviewNotes: section.data.reviewNotes,
+        sectionName: section.name,
+        sectionType: section.type
       });
       onSectionUpdate(section.id, 'draft', result.draft);
     } catch (error) {

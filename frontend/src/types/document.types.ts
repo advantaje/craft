@@ -8,6 +8,7 @@ export interface SectionData {
 export interface DocumentSection {
   id: string;
   name: string;
+  type: string;
   data: SectionData;
   isCompleted: boolean;
 }
@@ -31,6 +32,8 @@ export interface DocumentLookupResponse {
 
 export interface GenerateOutlineRequest {
   notes: string;
+  sectionName: string;
+  sectionType: string;
 }
 
 export interface GenerateOutlineResponse {
@@ -40,6 +43,8 @@ export interface GenerateOutlineResponse {
 export interface GenerateDraftFromOutlineRequest {
   notes: string;
   outline: string;
+  sectionName: string;
+  sectionType: string;
 }
 
 export interface GenerateDraftFromOutlineResponse {
@@ -48,6 +53,8 @@ export interface GenerateDraftFromOutlineResponse {
 
 export interface GenerateReviewRequest {
   draft: string;
+  sectionName: string;
+  sectionType: string;
 }
 
 export interface GenerateReviewResponse {
@@ -57,6 +64,8 @@ export interface GenerateReviewResponse {
 export interface GenerateDraftFromReviewRequest {
   draft: string;
   reviewNotes: string;
+  sectionName: string;
+  sectionType: string;
 }
 
 export interface GenerateDraftFromReviewResponse {
