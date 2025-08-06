@@ -58,14 +58,14 @@ class GenerateOutlineHandler(BaseHandler):
         return "\n".join(outline_points) + "\n\n[Generated from your notes - edit as needed]"
 
 
-class GenerateDraftHandler(BaseHandler):
+class GenerateDraftFromOutlineHandler(BaseHandler):
     def post(self):
         try:
             body = json.loads(self.request.body)
             notes = body.get('notes', '')
             outline = body.get('outline', '')
             
-            # Simple wrapper function for draft generation
+            # Simple wrapper function for draft generation from outline
             draft = self.generate_draft_from_outline(notes, outline)
             
             response = {"draft": draft}
@@ -94,7 +94,39 @@ class GenerateDraftHandler(BaseHandler):
         if not draft_paragraphs:
             draft_paragraphs = ["This section provides an overview of the main topic. Key points and supporting details would be elaborated here with comprehensive coverage of the subject matter."]
         
-        return "\n\n".join(draft_paragraphs) + "\n\n[Generated draft - review and refine as needed]"
+        return "\n\n".join(draft_paragraphs) + "\n\n[Generated draft from outline - review and refine as needed]"
+
+
+class GenerateDraftFromReviewHandler(BaseHandler):
+    def post(self):
+        try:
+            body = json.loads(self.request.body)
+            draft = body.get('draft', '')
+            review_notes = body.get('reviewNotes', '')
+            
+            # Generate updated draft from review notes
+            updated_draft = self.apply_review_notes(draft, review_notes)
+            
+            response = {"draft": updated_draft}
+            self.set_header("Content-Type", "application/json")
+            self.write(json.dumps(response))
+        except Exception as e:
+            self.set_status(500)
+            self.write(json.dumps({"error": str(e)}))
+    
+    def apply_review_notes(self, draft, review_notes):
+        # Simple processing function - can be replaced with LLM call
+        if not draft.strip():
+            return "Please provide a draft to revise."
+        if not review_notes.strip():
+            return "Please provide review notes to apply."
+        
+        # Simple revision - append review-based improvements
+        revised_draft = draft.replace("[Generated draft - review and refine as needed]", "")
+        revised_draft = revised_draft.replace("[Generated draft from outline - review and refine as needed]", "")
+        revised_draft += f"\n\n[REVISED based on feedback: {review_notes[:100]}{'...' if len(review_notes) > 100 else ''}]"
+        
+        return revised_draft
 
 
 class GenerateReviewHandler(BaseHandler):
@@ -102,18 +134,11 @@ class GenerateReviewHandler(BaseHandler):
         try:
             body = json.loads(self.request.body)
             draft = body.get('draft', '')
-            review_notes = body.get('reviewNotes', '')
             
-            # Simple wrapper function for review processing
-            if review_notes.strip():
-                # If there are review notes, generate an updated draft
-                updated_draft = self.apply_review_notes(draft, review_notes)
-                response = {"updatedDraft": updated_draft}
-            else:
-                # Generate review suggestions
-                review = self.generate_review_suggestions(draft)
-                response = {"review": review}
+            # Generate review suggestions from draft
+            review = self.generate_review_suggestions(draft)
             
+            response = {"review": review}
             self.set_header("Content-Type", "application/json")
             self.write(json.dumps(response))
         except Exception as e:
@@ -134,24 +159,14 @@ class GenerateReviewHandler(BaseHandler):
         ]
         
         return "Review Suggestions:\n\n" + "\n".join([f"• {suggestion}" for suggestion in suggestions]) + "\n\n[AI-generated review suggestions - use as guidance for improvements]"
-    
-    def apply_review_notes(self, draft, review_notes):
-        # Simple processing function - can be replaced with LLM call
-        if not draft.strip():
-            return "Please provide a draft to revise."
-        
-        # Simple revision - append review-based improvements
-        revised_draft = draft.replace("[Generated draft - review and refine as needed]", "")
-        revised_draft += f"\n\n[REVISED based on feedback: {review_notes[:100]}...]"
-        
-        return revised_draft
 
 
 def make_app():
     return tornado.web.Application([
         (r"/api/hello", HelloHandler),
         (r"/api/generate-outline", GenerateOutlineHandler),
-        (r"/api/generate-draft", GenerateDraftHandler),
+        (r"/api/generate-draft-from-outline", GenerateDraftFromOutlineHandler),
+        (r"/api/generate-draft-from-review", GenerateDraftFromReviewHandler),
         (r"/api/generate-review", GenerateReviewHandler),
     ])
 
