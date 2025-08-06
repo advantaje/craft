@@ -244,7 +244,7 @@ const Craft: React.FC = () => {
   };
 
   const getCompletedSteps = (section: DocumentSection): number[] => {
-    const { notes, outline, draft, reviewNotes } = section.data;
+    const { outline, draft } = section.data;
     const completed = [];
     
     // Step 0 is completed if step 1 (outline) has content
@@ -357,7 +357,7 @@ const Craft: React.FC = () => {
       <AppBar position="static">
         <Toolbar>
           <Typography variant="h6" style={{ flexGrow: 1 }}>
-            Craft - Document Planning & Drafting
+            CRAFT - Review Report Assistant
           </Typography>
           <Button color="inherit" component={Link} to="/about">
             About
@@ -439,7 +439,7 @@ const Craft: React.FC = () => {
                     color="primary"
                     onClick={lookupDocument}
                     disabled={!documentId.trim() || isProcessing.lookup}
-                    size="large"
+                    style={{ height: '56px' }}
                   >
                     {isProcessing.lookup ? (
                       <>

@@ -4,6 +4,13 @@ A full-stack document planning and drafting application with React TypeScript fr
 
 ## ✨ Key Features
 
+### 🏠 **Document Lookup (Home Tab)**
+- **Starting Point**: Home tab as the first tab with document ID lookup
+- **Database Integration**: Retrieve document metadata using document IDs
+- **Flexible Data Display**: Handles arbitrary field/value pairs from backend
+- **Visual Feedback**: Checkmark appears in Home tab when lookup is successful
+- **Professional Layout**: Responsive grid display for document information
+
 ### 📝 **Smart Workflow**
 - **3-Step Process**: Notes → Draft Outline → Draft & Review Cycle
 - **All-in-One View**: See all steps on one screen with card-based layout
@@ -79,7 +86,16 @@ A full-stack document planning and drafting application with React TypeScript fr
 
 ### Getting Started
 1. Open your browser to **http://localhost:3000**
-2. Choose a document section tab (Introduction, Background, Usage, Conclusion) or add a custom section with the **"+"** tab
+2. **Start with the Home tab** to look up existing document information (optional)
+3. Choose a document section tab (Introduction, Background, Usage, Conclusion) or add a custom section with the **"+"** tab
+
+### Home Tab - Document Lookup
+**Purpose**: Retrieve existing document metadata before starting the workflow
+- Enter a **Document ID** in the input field
+- Click **"Lookup Document"** or press Enter to retrieve information
+- View document details including owner, lead, project info, dates, status, and more
+- **Success Indicator**: Green checkmark appears in Home tab when data is found
+- **Flexible Display**: Automatically handles any number of document fields
 
 ### 3-Step Workflow
 **Step 1: Notes**
@@ -110,7 +126,14 @@ A full-stack document planning and drafting application with React TypeScript fr
 
 ## 🔌 API Endpoints
 
+### Document Management
 - **`GET /api/hello`** - Health check endpoint with timestamp
+- **`POST /api/document-lookup`** - Retrieves document metadata by ID
+  - Input: `{ id: string }`
+  - Output: `{ data: { [field: string]: string } }`
+  - Returns arbitrary field/value pairs (owner, lead, dates, status, etc.)
+
+### AI-Powered Document Generation
 - **`POST /api/generate-outline`** - Creates structured outline from notes
   - Input: `{ notes: string }`
   - Output: `{ outline: string }`
@@ -126,8 +149,11 @@ A full-stack document planning and drafting application with React TypeScript fr
 
 ## 💡 Pro Tips
 
+- **Start with Home**: Use the Home tab to lookup existing document metadata before beginning work
+- **Flexible Data**: Document lookup handles any number of fields - perfect for various document types
 - **Focus-driven UI**: The stepper highlights the step corresponding to your currently focused textbox
 - **Cyclical Process**: Step 3 is designed for iteration—generate reviews and apply feedback repeatedly  
 - **Section Independence**: Each section maintains its own progress and can be worked on separately
 - **Completion Benefits**: Completed sections display as professionally formatted documents
 - **Custom Sections**: Add sections for any document type (Executive Summary, Methodology, etc.)
+- **Visual Feedback**: Look for checkmarks in tabs to track completion status across the entire workflow
