@@ -126,3 +126,4 @@ temp/
 ehthumbs.db
 Thumbs.db
 .claude/settings.local.json
+backend/services/openai_tools.py

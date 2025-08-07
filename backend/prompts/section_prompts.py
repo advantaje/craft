@@ -176,6 +176,54 @@ Provide review feedback:
 """
     }
     
+    REVISION_PROMPTS = {
+        "introduction": """
+You are revising an Introduction section based on review feedback. Improve the draft while maintaining its core message and structure:
+
+Original Draft: {draft}
+
+Review Feedback: {review_notes}
+
+Revise the Introduction section incorporating the feedback:
+""",
+        "background": """
+You are revising a Background section based on review feedback. Improve the draft while maintaining its core message and structure:
+
+Original Draft: {draft}
+
+Review Feedback: {review_notes}
+
+Revise the Background section incorporating the feedback:
+""",
+        "usage": """
+You are revising a Usage section based on review feedback. Improve the draft while maintaining its core message and structure:
+
+Original Draft: {draft}
+
+Review Feedback: {review_notes}
+
+Revise the Usage section incorporating the feedback:
+""",
+        "conclusion": """
+You are revising a Conclusion section based on review feedback. Improve the draft while maintaining its core message and structure:
+
+Original Draft: {draft}
+
+Review Feedback: {review_notes}
+
+Revise the Conclusion section incorporating the feedback:
+""",
+        "default": """
+You are revising a {section_name} section based on review feedback. Improve the draft while maintaining its core message and structure:
+
+Original Draft: {draft}
+
+Review Feedback: {review_notes}
+
+Revise the {section_name} section incorporating the feedback:
+"""
+    }
+    
     @classmethod
     def get_outline_prompt(cls, section_type: str, section_name: str, notes: str) -> str:
         """Get outline prompt for a specific section type"""
@@ -196,3 +244,10 @@ Provide review feedback:
         section_key = section_type.lower()
         template = cls.REVIEW_PROMPTS.get(section_key, cls.REVIEW_PROMPTS["default"])
         return template.format(draft=draft, section_name=section_name)
+    
+    @classmethod
+    def get_revision_prompt(cls, section_type: str, section_name: str, draft: str, review_notes: str) -> str:
+        """Get revision prompt for a specific section type"""
+        section_key = section_type.lower()
+        template = cls.REVISION_PROMPTS.get(section_key, cls.REVISION_PROMPTS["default"])
+        return template.format(draft=draft, review_notes=review_notes, section_name=section_name)
