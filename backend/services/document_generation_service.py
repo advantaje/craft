@@ -75,6 +75,7 @@ class DocumentGenerationService:
         for i, section in enumerate(sections):
             section_name = section.get('name', 'Untitled Section')
             section_draft = section.get('data', {}).get('draft', '')
+            section_type = section.get('type', 'default')
             
             if not section_draft.strip():
                 continue
@@ -88,8 +89,8 @@ class DocumentGenerationService:
             content_lines.append("=" * len(section_name))
             content_lines.append("")
             
-            # Clean and format section content
-            cleaned_content = self._clean_section_content(section_draft)
+            # Clean and format section content with section type context
+            cleaned_content = self._clean_section_content(section_draft, section_type)
             content_lines.append(cleaned_content)
             
             content_lines.append("")
@@ -118,16 +119,27 @@ class DocumentGenerationService:
         """
         return self.generate_txt_document_with_progress(document_id, document_data, sections, None)
     
-    def _clean_section_content(self, content: str) -> str:
+    def _clean_section_content(self, content: str, section_type: str = 'default') -> str:
         """
         Clean section content by removing generation markers and formatting
         
         Args:
             content: Raw section draft content
+            section_type: Type of section for appropriate formatting
             
         Returns:
             Cleaned and formatted content
         """
+        # Check if content is JSON (for table and risk sections)
+        try:
+            table_data = json.loads(content)
+            if 'rows' in table_data:
+                # Format table data as a text table with appropriate columns
+                return self._format_table_as_text(table_data, section_type)
+        except (json.JSONDecodeError, TypeError):
+            # Not JSON, process as regular text
+            pass
+        
         lines = content.split('\n')
         cleaned_lines = []
         
@@ -153,6 +165,70 @@ class DocumentGenerationService:
                 formatted_content.append(line)
         
         return "\n".join(formatted_content)
+    
+    def _format_table_as_text(self, table_data: dict, section_type: str = 'table') -> str:
+        """
+        Format table JSON data as a text table
+        
+        Args:
+            table_data: Dictionary with 'rows' containing table data
+            section_type: Type of section ('table' for limitations, 'risk' for risk issues)
+            
+        Returns:
+            Formatted text table
+        """
+        if not table_data.get('rows'):
+            return "Empty table"
+        
+        # Define column headers and widths based on section type
+        if section_type == 'risk':
+            # Model Risk Issues columns
+            columns = [
+                ('Risk Issue', 25),
+                ('Description', 40),
+                ('Likelihood', 12),
+                ('Risk Level', 12),
+                ('Controls', 30)
+            ]
+        else:
+            # Model Limitations columns (default)
+            columns = [
+                ('Limitation', 25),
+                ('Description', 40),
+                ('Severity', 10),
+                ('Impact', 15),
+                ('Mitigation', 30)
+            ]
+        
+        lines = []
+        
+        # Create header row
+        header = "|"
+        separator = "|"
+        for col_name, width in columns:
+            header += f" {col_name.ljust(width)} |"
+            separator += "-" * (width + 2) + "|"
+        
+        lines.append(header)
+        lines.append(separator)
+        
+        # Add data rows
+        for row in table_data['rows']:
+            row_line = "|"
+            for col_name, width in columns:
+                col_key = col_name.lower()
+                value = str(row.get(col_key, '-'))
+                # Truncate if too long
+                if len(value) > width:
+                    value = value[:width-3] + "..."
+                row_line += f" {value.ljust(width)} |"
+            lines.append(row_line)
+        
+        # Add footer with row count
+        lines.append(separator)
+        lines.append(f"Total rows: {len(table_data['rows'])}")
+        
+        return "\n".join(lines)
     
     def create_temporary_file(self, content: str, document_id: str) -> str:
         """

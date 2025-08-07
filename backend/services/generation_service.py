@@ -55,16 +55,29 @@ class GenerationService:
             # Get section-specific prompt
             prompt = self.prompts.get_draft_prompt(section_type, section_name, notes, outline)
             
-            # Call OpenAI API
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are an expert document writer. Create comprehensive, well-structured content from outlines and notes."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=2000
-            )
+            # For limitations and risk sections, use JSON mode
+            if section_type in ['limitations', 'risk']:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": "You are an expert at generating structured table data. Always return valid JSON."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    response_format={"type": "json_object"},
+                    temperature=0.7,
+                    max_tokens=2000
+                )
+            else:
+                # Regular text generation for other sections
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": "You are an expert document writer. Create comprehensive, well-structured content from outlines and notes."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=2000
+                )
             
             return response.choices[0].message.content.strip()
             
@@ -109,16 +122,29 @@ class GenerationService:
             # Get section-specific revision prompt
             prompt = self.prompts.get_revision_prompt(section_type, section_name, draft, review_notes)
             
-            # Call OpenAI API
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are an expert writer. Revise documents based on feedback while maintaining the original intent and structure."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=2500
-            )
+            # For limitations and risk sections, use JSON mode
+            if section_type in ['limitations', 'risk']:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": "You are an expert at revising table data. Always return valid JSON matching the specified format."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    response_format={"type": "json_object"},
+                    temperature=0.7,
+                    max_tokens=2500
+                )
+            else:
+                # Regular text generation for other sections
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": "You are an expert writer. Revise documents based on feedback while maintaining the original intent and structure."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=2500
+                )
             
             return response.choices[0].message.content.strip()
             

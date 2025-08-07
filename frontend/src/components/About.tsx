@@ -69,7 +69,7 @@ const About: React.FC = () => {
                   🎯 Section Management
                 </Typography>
                 <Typography variant="body2" paragraph color="textSecondary">
-                  Pre-defined sections (Introduction, Background, Usage, Conclusion) plus unlimited custom sections
+                  Pre-defined sections (Background, Product, Usage, Model Limitations, Model Risk Issues) plus unlimited custom sections
                 </Typography>
               </Box>
 
@@ -115,7 +115,7 @@ const About: React.FC = () => {
                 </li>
                 <li>
                   <Typography variant="body2" paragraph color="textSecondary">
-                    <strong>Choose a Section:</strong> Work on Introduction, Background, Usage, Conclusion, or add custom sections
+                    <strong>Choose a Section:</strong> Work on Background, Product, Usage, Model Limitations, Model Risk Issues, or add custom sections
                   </Typography>
                 </li>
                 <li>

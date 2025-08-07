@@ -22,7 +22,9 @@ import { useDocumentSections } from '../hooks/useDocumentSections';
 import { DocumentInfo, SectionData } from '../types/document.types';
 import DocumentLookup from './DocumentLookup';
 import SectionWorkflow from './SectionWorkflow';
+import TableWorkflow from './TableWorkflow';
 import FileGenerationModal from './FileGenerationModal';
+import { getTableConfiguration } from '../config/tableConfigurations';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -227,11 +229,20 @@ const Craft: React.FC = () => {
 
           {sections.map((section, index) => (
             <TabPanel key={section.id} value={currentTab} index={index + 1}>
-              <SectionWorkflow
-                section={section}
-                onSectionUpdate={handleSectionUpdate}
-                onToggleCompletion={toggleSectionCompletion}
-              />
+              {section.type === 'limitations' || section.type === 'risk' ? (
+                <TableWorkflow
+                  section={section}
+                  tableConfig={getTableConfiguration(section.type)}
+                  onSectionUpdate={handleSectionUpdate}
+                  onToggleCompletion={toggleSectionCompletion}
+                />
+              ) : (
+                <SectionWorkflow
+                  section={section}
+                  onSectionUpdate={handleSectionUpdate}
+                  onToggleCompletion={toggleSectionCompletion}
+                />
+              )}
             </TabPanel>
           ))}
         </Paper>

@@ -13,6 +13,19 @@ export interface DocumentSection {
   isCompleted: boolean;
 }
 
+export interface TableColumn {
+  id: string;
+  label: string;
+  type: 'text' | 'number' | 'date' | 'select';
+  width?: string;
+  required?: boolean;
+  options?: string[];
+}
+
+export interface TableData {
+  rows: Array<{ [columnId: string]: string | number }>;
+}
+
 export interface DocumentInfo {
   [key: string]: string;
 }
