@@ -53,6 +53,12 @@ export function useDocumentSections() {
     );
   }, []);
 
+  const canRemoveSection = useCallback((sectionId: string) => {
+    // Don't allow removal of default sections (Introduction, Background, Usage, Conclusion)
+    const defaultSectionIds = ['1', '2', '3', '4'];
+    return !defaultSectionIds.includes(sectionId);
+  }, []);
+
   const getSectionById = useCallback((sectionId: string) => {
     return sections.find(section => section.id === sectionId);
   }, [sections]);
@@ -63,6 +69,7 @@ export function useDocumentSections() {
     toggleSectionCompletion,
     addSection,
     removeSection,
+    canRemoveSection,
     getSectionById
   };
 }

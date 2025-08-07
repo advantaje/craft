@@ -10,6 +10,8 @@ import {
   GenerateReviewResponse,
   GenerateDraftFromReviewRequest,
   GenerateDraftFromReviewResponse,
+  GenerateDocumentRequest,
+  GenerateDocumentResponse,
   ApiError
 } from '../types/document.types';
 
@@ -98,6 +100,33 @@ class ApiService {
         body: JSON.stringify(request),
       }
     );
+  }
+
+  async generateDocument(request: GenerateDocumentRequest): Promise<GenerateDocumentResponse> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/generate-document`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate document');
+      }
+
+      // For file download, we need to handle the response as a blob
+      const blob = await response.blob();
+      
+      // Create a download URL for the blob
+      const downloadUrl = window.URL.createObjectURL(blob);
+      
+      return { downloadUrl };
+    } catch (error) {
+      console.error(`API Error: ${API_BASE_URL}/generate-document`, error);
+      throw error;
+    }
   }
 }
 

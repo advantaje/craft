@@ -9,6 +9,7 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from services.generation_service import GenerationService
+from services.document_generation_service import DocumentGenerationService
 
 
 class BaseHandler(tornado.web.RequestHandler):
@@ -209,6 +210,123 @@ class GenerateReviewHandler(BaseHandler):
             self.write(json.dumps({"error": str(e)}))
 
 
+class GenerateDocumentHandler(BaseHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.document_service = DocumentGenerationService()
+
+    def post(self):
+        try:
+            body = json.loads(self.request.body)
+            document_id = body.get('documentId', '')
+            document_data = body.get('documentData', {})
+            sections = body.get('sections', [])
+            
+            if not document_id:
+                self.set_status(400)
+                self.write(json.dumps({"error": "Document ID is required"}))
+                return
+            
+            if not sections:
+                self.set_status(400)
+                self.write(json.dumps({"error": "At least one completed section is required"}))
+                return
+            
+            # Generate the document content
+            content = self.document_service.generate_txt_document(
+                document_id, document_data, sections
+            )
+            
+            # Generate filename
+            filename = self.document_service.get_filename(document_id)
+            
+            # Set headers for file download
+            self.set_header("Content-Type", "text/plain; charset=utf-8")
+            self.set_header("Content-Disposition", f"attachment; filename={filename}")
+            self.set_header("Content-Length", str(len(content.encode('utf-8'))))
+            
+            # Write the file content
+            self.write(content.encode('utf-8'))
+            
+        except Exception as e:
+            self.set_status(500)
+            self.write(json.dumps({"error": str(e)}))
+
+
+class GenerateDocumentStreamHandler(BaseHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.document_service = DocumentGenerationService()
+
+    def post(self):
+        try:
+            body = json.loads(self.request.body)
+            document_id = body.get('documentId', '')
+            document_data = body.get('documentData', {})
+            sections = body.get('sections', [])
+            
+            if not document_id:
+                self.set_status(400)
+                self.write(json.dumps({"error": "Document ID is required"}))
+                return
+            
+            if not sections:
+                self.set_status(400)
+                self.write(json.dumps({"error": "At least one completed section is required"}))
+                return
+            
+            # Set up SSE headers
+            self.set_header("Content-Type", "text/event-stream")
+            self.set_header("Cache-Control", "no-cache")
+            self.set_header("Connection", "keep-alive")
+            self.set_header("Access-Control-Allow-Origin", "http://localhost:3000")
+            self.set_header("Access-Control-Allow-Headers", "Content-Type")
+            
+            # Progress callback function
+            def send_progress(status: str, message: str, progress: int = 0):
+                event_data = {
+                    "status": status,
+                    "message": message,
+                    "progress": progress
+                }
+                self.write(f"data: {json.dumps(event_data)}\n\n")
+                self.flush()
+            
+            # Generate the document with progress updates
+            try:
+                content = self.document_service.generate_txt_document_with_progress(
+                    document_id, document_data, sections, send_progress
+                )
+                
+                if content is None:
+                    send_progress("error", "Failed to generate document", 0)
+                    return
+                
+                # Create the download blob
+                filename = self.document_service.get_filename(document_id)
+                
+                # Send final completion event with download data
+                completion_data = {
+                    "status": "ready",
+                    "message": "Document ready for download!",
+                    "progress": 100,
+                    "downloadData": {
+                        "content": content,
+                        "filename": filename,
+                        "contentType": "text/plain; charset=utf-8"
+                    }
+                }
+                self.write(f"data: {json.dumps(completion_data)}\n\n")
+                self.flush()
+                
+            except Exception as e:
+                send_progress("error", f"Generation failed: {str(e)}", 0)
+            
+        except Exception as e:
+            self.set_status(500)
+            self.write(json.dumps({"error": str(e)}))
+
+
 def make_app():
     return tornado.web.Application([
         (r"/api/hello", HelloHandler),
@@ -217,6 +335,8 @@ def make_app():
         (r"/api/generate-draft-from-outline", GenerateDraftFromOutlineHandler),
         (r"/api/generate-draft-from-review", GenerateDraftFromReviewHandler),
         (r"/api/generate-review", GenerateReviewHandler),
+        (r"/api/generate-document", GenerateDocumentHandler),
+        (r"/api/generate-document-stream", GenerateDocumentStreamHandler),
     ])
 
 

@@ -75,3 +75,24 @@ export interface GenerateDraftFromReviewResponse {
 export interface ApiError {
   error: string;
 }
+
+export interface GenerateDocumentRequest {
+  documentId: string;
+  documentData: DocumentInfo | null;
+  sections: DocumentSection[];
+}
+
+export interface GenerateDocumentResponse {
+  downloadUrl?: string;
+}
+
+export interface DocumentGenerationProgressEvent {
+  status: 'validating' | 'preparing' | 'header' | 'metadata' | 'processing' | 'finalizing' | 'complete' | 'ready' | 'error';
+  message: string;
+  progress: number;
+  downloadData?: {
+    content: string;
+    filename: string;
+    contentType: string;
+  };
+}

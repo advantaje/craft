@@ -16,7 +16,10 @@ import { apiService } from '../services/api.service';
 import { DocumentInfo } from '../types/document.types';
 
 interface DocumentLookupProps {
-  onDocumentFound?: (data: DocumentInfo) => void;
+  onDocumentFound?: (data: DocumentInfo | null) => void;
+  documentId: string;
+  setDocumentId: (id: string) => void;
+  documentData: DocumentInfo | null;
 }
 
 const DocumentInfoDisplay: React.FC<{ data: DocumentInfo }> = ({ data }) => {
@@ -52,9 +55,12 @@ const DocumentInfoDisplay: React.FC<{ data: DocumentInfo }> = ({ data }) => {
   );
 };
 
-const DocumentLookup: React.FC<DocumentLookupProps> = ({ onDocumentFound }) => {
-  const [documentId, setDocumentId] = useState('');
-  const [documentData, setDocumentData] = useState<DocumentInfo | null>(null);
+const DocumentLookup: React.FC<DocumentLookupProps> = ({ 
+  onDocumentFound, 
+  documentId, 
+  setDocumentId, 
+  documentData 
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,12 +72,11 @@ const DocumentLookup: React.FC<DocumentLookupProps> = ({ onDocumentFound }) => {
     
     try {
       const result = await apiService.lookupDocument({ id: documentId });
-      setDocumentData(result.data);
       onDocumentFound?.(result.data);
     } catch (error) {
       console.error('Error looking up document:', error);
       setError('Failed to lookup document. Please try again.');
-      setDocumentData(null);
+      onDocumentFound?.(null);
     } finally {
       setIsLoading(false);
     }
@@ -95,7 +100,14 @@ const DocumentLookup: React.FC<DocumentLookupProps> = ({ onDocumentFound }) => {
               variant="outlined"
               label="Document ID"
               value={documentId}
-              onChange={(e) => setDocumentId(e.target.value)}
+              onChange={(e) => {
+                setDocumentId(e.target.value);
+                // Clear results when user changes the document ID
+                if (documentData && e.target.value !== documentId) {
+                  onDocumentFound?.(null);
+                  setError(null);
+                }
+              }}
               placeholder="Enter document ID to lookup information..."
               onKeyPress={(e) => e.key === 'Enter' && lookupDocument()}
               style={{ marginRight: '1rem' }}
