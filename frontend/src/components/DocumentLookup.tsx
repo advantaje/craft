@@ -12,7 +12,7 @@ import {
   Paper
 } from '@material-ui/core';
 import { Check as CheckIcon } from '@material-ui/icons';
-import { apiService } from '../services/api.service';
+import { lookupDocument } from '../services/api.service';
 import { DocumentInfo } from '../types/document.types';
 
 interface DocumentLookupProps {
@@ -64,15 +64,15 @@ const DocumentLookup: React.FC<DocumentLookupProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const lookupDocument = async () => {
+  const performDocumentLookup = async () => {
     if (!documentId.trim()) return;
 
     setIsLoading(true);
     setError(null);
     
     try {
-      const result = await apiService.lookupDocument({ id: documentId });
-      onDocumentFound?.(result.data);
+      const result = await lookupDocument({ id: documentId });
+      onDocumentFound?.(result);
     } catch (error) {
       console.error('Error looking up document:', error);
       setError('Failed to lookup document. Please try again.');
@@ -109,7 +109,7 @@ const DocumentLookup: React.FC<DocumentLookupProps> = ({
                 }
               }}
               placeholder="Enter document ID to lookup information..."
-              onKeyPress={(e) => e.key === 'Enter' && lookupDocument()}
+              onKeyPress={(e) => e.key === 'Enter' && performDocumentLookup()}
               style={{ marginRight: '1rem' }}
               error={!!error}
               helperText={error}
@@ -117,7 +117,7 @@ const DocumentLookup: React.FC<DocumentLookupProps> = ({
             <Button
               variant="contained"
               color="primary"
-              onClick={lookupDocument}
+              onClick={performDocumentLookup}
               disabled={!documentId.trim() || isLoading}
               style={{ height: '56px', minWidth: '150px' }}
             >

@@ -26,8 +26,10 @@ class BaseHandler(tornado.web.RequestHandler):
 class HelloHandler(BaseHandler):
     def get(self):
         response = {
-            "message": "Hello World from Tornado!",
-            "timestamp": datetime.now().isoformat()
+            "result": {
+                "message": "Hello World from Tornado!",
+                "timestamp": datetime.now().isoformat()
+            }
         }
         self.set_header("Content-Type", "application/json")
         self.write(json.dumps(response))
@@ -47,7 +49,7 @@ class DocumentLookupHandler(BaseHandler):
             # Simulate database lookup with arbitrary data
             document_data = self.get_document_data(document_id)
             
-            response = {"data": document_data}
+            response = {"result": document_data}
             self.set_header("Content-Type", "application/json")
             self.write(json.dumps(response))
         except Exception as e:
@@ -125,7 +127,7 @@ class GenerateOutlineHandler(BaseHandler):
                 notes, section_name, section_type
             )
             
-            response = {"outline": outline}
+            response = {"result": outline}
             self.set_header("Content-Type", "application/json")
             self.write(json.dumps(response))
         except Exception as e:
@@ -151,7 +153,7 @@ class GenerateDraftFromOutlineHandler(BaseHandler):
                 notes, outline, section_name, section_type
             )
             
-            response = {"draft": draft}
+            response = {"result": draft}
             self.set_header("Content-Type", "application/json")
             self.write(json.dumps(response))
         except Exception as e:
@@ -177,7 +179,7 @@ class GenerateDraftFromReviewHandler(BaseHandler):
                 draft, review_notes, section_name, section_type
             )
             
-            response = {"draft": updated_draft}
+            response = {"result": updated_draft}
             self.set_header("Content-Type", "application/json")
             self.write(json.dumps(response))
         except Exception as e:
@@ -202,7 +204,7 @@ class GenerateReviewHandler(BaseHandler):
                 draft, section_name, section_type
             )
             
-            response = {"review": review}
+            response = {"result": review}
             self.set_header("Content-Type", "application/json")
             self.write(json.dumps(response))
         except Exception as e:

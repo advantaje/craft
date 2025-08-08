@@ -17,7 +17,12 @@ import {
 } from '@material-ui/core';
 import { Refresh as RefreshIcon, Check as CheckIcon, Warning as WarningIcon } from '@material-ui/icons';
 import { DocumentSection, SectionData } from '../types/document.types';
-import { apiService } from '../services/api.service';
+import { 
+  generateOutline, 
+  generateDraftFromOutline, 
+  generateReview, 
+  generateDraftFromReview 
+} from '../services/api.service';
 import FormattedDocument from './FormattedDocument';
 
 interface SectionWorkflowProps {
@@ -55,17 +60,17 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
     setLoading(prev => ({ ...prev, [operation]: state }));
   };
 
-  const generateOutline = async () => {
+  const handleGenerateOutline = async () => {
     if (!section.data.notes.trim()) return;
     
     setLoadingState('outline', true);
     try {
-      const result = await apiService.generateOutline({ 
+      const result = await generateOutline({ 
         notes: section.data.notes,
         sectionName: section.name,
         sectionType: section.type
       });
-      onSectionUpdate(section.id, 'outline', result.outline);
+      onSectionUpdate(section.id, 'outline', result);
     } catch (error) {
       console.error('Error generating outline:', error);
     } finally {
@@ -73,18 +78,18 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
     }
   };
 
-  const generateDraftFromOutline = async () => {
+  const handleGenerateDraftFromOutline = async () => {
     if (!section.data.outline.trim()) return;
     
     setLoadingState('draft-outline', true);
     try {
-      const result = await apiService.generateDraftFromOutline({
+      const result = await generateDraftFromOutline({
         notes: section.data.notes,
         outline: section.data.outline,
         sectionName: section.name,
         sectionType: section.type
       });
-      onSectionUpdate(section.id, 'draft', result.draft);
+      onSectionUpdate(section.id, 'draft', result);
     } catch (error) {
       console.error('Error generating draft:', error);
     } finally {
@@ -92,17 +97,17 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
     }
   };
 
-  const generateReview = async () => {
+  const handleGenerateReview = async () => {
     if (!section.data.draft.trim()) return;
     
     setLoadingState('review', true);
     try {
-      const result = await apiService.generateReview({ 
+      const result = await generateReview({ 
         draft: section.data.draft,
         sectionName: section.name,
         sectionType: section.type
       });
-      onSectionUpdate(section.id, 'reviewNotes', result.review);
+      onSectionUpdate(section.id, 'reviewNotes', result);
     } catch (error) {
       console.error('Error generating review:', error);
     } finally {
@@ -110,18 +115,18 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
     }
   };
 
-  const generateDraftFromReview = async () => {
+  const handleGenerateDraftFromReview = async () => {
     if (!section.data.draft.trim() || !section.data.reviewNotes.trim()) return;
     
     setLoadingState('draft-review', true);
     try {
-      const result = await apiService.generateDraftFromReview({
+      const result = await generateDraftFromReview({
         draft: section.data.draft,
         reviewNotes: section.data.reviewNotes,
         sectionName: section.name,
         sectionType: section.type
       });
-      onSectionUpdate(section.id, 'draft', result.draft);
+      onSectionUpdate(section.id, 'draft', result);
     } catch (error) {
       console.error('Error revising draft:', error);
     } finally {
@@ -189,7 +194,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
                 <Button
                   variant="contained"
                   color="primary"
-                  onClick={generateOutline}
+                  onClick={handleGenerateOutline}
                   disabled={!section.data.notes.trim() || loading.outline}
                   size="small"
                 >
@@ -228,7 +233,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
                 <Button
                   variant="contained"
                   color="primary"
-                  onClick={generateDraftFromOutline}
+                  onClick={handleGenerateDraftFromOutline}
                   disabled={!section.data.outline.trim() || loading['draft-outline']}
                   size="small"
                 >
@@ -269,7 +274,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
                     <Button
                       variant="outlined"
                       color="primary"
-                      onClick={generateReview}
+                      onClick={handleGenerateReview}
                       disabled={!section.data.draft.trim() || loading.review}
                       size="small"
                     >
@@ -302,7 +307,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
                     <Button
                       variant="contained"
                       color="secondary"
-                      onClick={generateDraftFromReview}
+                      onClick={handleGenerateDraftFromReview}
                       disabled={!section.data.draft.trim() || !section.data.reviewNotes.trim() || loading['draft-review']}
                       startIcon={<RefreshIcon />}
                       size="small"

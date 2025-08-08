@@ -39,18 +39,10 @@ export interface DocumentLookupRequest {
   id: string;
 }
 
-export interface DocumentLookupResponse {
-  data: DocumentInfo;
-}
-
 export interface GenerateOutlineRequest {
   notes: string;
   sectionName: string;
   sectionType: string;
-}
-
-export interface GenerateOutlineResponse {
-  outline: string;
 }
 
 export interface GenerateDraftFromOutlineRequest {
@@ -60,18 +52,10 @@ export interface GenerateDraftFromOutlineRequest {
   sectionType: string;
 }
 
-export interface GenerateDraftFromOutlineResponse {
-  draft: string;
-}
-
 export interface GenerateReviewRequest {
   draft: string;
   sectionName: string;
   sectionType: string;
-}
-
-export interface GenerateReviewResponse {
-  review: string;
 }
 
 export interface GenerateDraftFromReviewRequest {
@@ -79,10 +63,6 @@ export interface GenerateDraftFromReviewRequest {
   reviewNotes: string;
   sectionName: string;
   sectionType: string;
-}
-
-export interface GenerateDraftFromReviewResponse {
-  draft: string;
 }
 
 export interface ApiError {
