@@ -180,24 +180,24 @@ class DocumentGenerationService:
         if not table_data.get('rows'):
             return "Empty table"
         
-        # Define column headers and widths based on section type
+        # Define column headers, keys, and widths based on section type
         if section_type == 'risk':
-            # Model Risk Issues columns
+            # Model Risk Issues columns: (display_name, json_key, width)
             columns = [
-                ('Risk Issue', 25),
-                ('Description', 40),
-                ('Likelihood', 12),
-                ('Risk Level', 12),
-                ('Controls', 30)
+                ('Risk Issue', 'item', 25),
+                ('Description', 'description', 40),
+                ('Likelihood', 'quantity', 12),
+                ('Risk Level', 'status', 12),
+                ('Controls', 'notes', 30)
             ]
         else:
-            # Model Limitations columns (default)
+            # Model Limitations columns (default): (display_name, json_key, width)
             columns = [
-                ('Limitation', 25),
-                ('Description', 40),
-                ('Severity', 10),
-                ('Impact', 15),
-                ('Mitigation', 30)
+                ('Limitation', 'item', 25),
+                ('Description', 'description', 40),
+                ('Severity', 'quantity', 10),
+                ('Impact', 'status', 15),
+                ('Mitigation', 'notes', 30)
             ]
         
         lines = []
@@ -205,7 +205,7 @@ class DocumentGenerationService:
         # Create header row
         header = "|"
         separator = "|"
-        for col_name, width in columns:
+        for col_name, col_key, width in columns:
             header += f" {col_name.ljust(width)} |"
             separator += "-" * (width + 2) + "|"
         
@@ -215,8 +215,7 @@ class DocumentGenerationService:
         # Add data rows
         for row in table_data['rows']:
             row_line = "|"
-            for col_name, width in columns:
-                col_key = col_name.lower()
+            for col_name, col_key, width in columns:
                 value = str(row.get(col_key, '-'))
                 # Truncate if too long
                 if len(value) > width:
