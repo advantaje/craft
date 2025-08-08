@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 import { CssBaseline, ThemeProvider, createTheme } from '@material-ui/core';
 import Craft from './components/Craft';
 import About from './components/About';
@@ -17,10 +17,10 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
-        <Routes>
-          <Route path="/" element={<Craft />} />
-          <Route path="/about" element={<About />} />
-        </Routes>
+        <Switch>
+          <Route exact path="/" component={Craft} />
+          <Route path="/about" component={About} />
+        </Switch>
       </Router>
     </ThemeProvider>
   );

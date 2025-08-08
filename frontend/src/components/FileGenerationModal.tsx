@@ -22,7 +22,7 @@ interface FileGenerationModalProps {
   sections: DocumentSection[];
 }
 
-type GenerationStep = 'validating' | 'preparing' | 'header' | 'metadata' | 'processing' | 'finalizing' | 'complete' | 'ready' | 'error';
+type GenerationState = 'loading' | 'complete' | 'error';
 
 const FileGenerationModal: React.FC<FileGenerationModalProps> = ({
   open,
@@ -31,35 +31,18 @@ const FileGenerationModal: React.FC<FileGenerationModalProps> = ({
   documentData,
   sections
 }) => {
-  const [currentStep, setCurrentStep] = useState<GenerationStep>('validating');
+  const [state, setState] = useState<GenerationState>('loading');
   const [progress, setProgress] = useState(0);
-  const [statusMessage, setStatusMessage] = useState<string>('Validating sections...');
+  const [statusMessage, setStatusMessage] = useState<string>('Starting document generation...');
   const [error, setError] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
-  const [eventSource, setEventSource] = useState<EventSource | null>(null);
-
-  const stepLabels: { [key in GenerationStep]: string } = {
-    validating: 'Validating sections...',
-    preparing: 'Preparing document structure...',
-    header: 'Creating document header...',
-    metadata: 'Adding document information...',
-    processing: 'Processing sections...',
-    finalizing: 'Finalizing document...',
-    complete: 'Document generation complete!',
-    ready: 'Document ready for download!',
-    error: 'Error generating document'
-  };
 
   const resetState = () => {
-    setCurrentStep('validating');
+    setState('loading');
     setProgress(0);
-    setStatusMessage('Validating sections...');
+    setStatusMessage('Starting document generation...');
     setError(null);
     setDownloadUrl(null);
-    if (eventSource) {
-      eventSource.close();
-      setEventSource(null);
-    }
   };
 
   const generateDocument = async () => {
@@ -68,15 +51,6 @@ const FileGenerationModal: React.FC<FileGenerationModalProps> = ({
       
       // Get only completed sections
       const completedSections = sections.filter(section => section.isCompleted);
-      
-      // Create EventSource for SSE
-      const es = new EventSource('http://localhost:8888/api/generate-document-stream');
-      setEventSource(es);
-      
-      // Send the request data via POST (EventSource doesn't support POST directly)
-      // We'll need to modify this approach since EventSource only supports GET
-      // Instead, we'll use fetch with streaming
-      es.close(); // Close the EventSource since we need to use fetch for POST
       
       const response = await fetch('http://localhost:8888/api/generate-document-stream', {
         method: 'POST',
@@ -117,16 +91,16 @@ const FileGenerationModal: React.FC<FileGenerationModalProps> = ({
             try {
               const eventData: DocumentGenerationProgressEvent = JSON.parse(line.substring(6));
               
-              setCurrentStep(eventData.status);
-              setProgress(eventData.progress);
-              setStatusMessage(eventData.message);
-              
+              // Map backend statuses to simplified states
               if (eventData.status === 'error') {
+                setState('error');
                 setError(eventData.message);
                 break;
-              }
-              
-              if (eventData.status === 'ready' && eventData.downloadData) {
+              } else if (eventData.status === 'ready' && eventData.downloadData) {
+                setState('complete');
+                setProgress(100);
+                setStatusMessage('Document ready for download!');
+                
                 // Create blob URL for download
                 const blob = new Blob([eventData.downloadData.content], {
                   type: eventData.downloadData.contentType
@@ -134,6 +108,15 @@ const FileGenerationModal: React.FC<FileGenerationModalProps> = ({
                 const url = window.URL.createObjectURL(blob);
                 setDownloadUrl(url);
                 break;
+              } else if (eventData.status === 'complete') {
+                // Backend says complete but not ready yet, keep loading
+                setProgress(eventData.progress);
+                setStatusMessage(eventData.message);
+              } else {
+                // All other statuses are part of loading
+                setState('loading');
+                setProgress(eventData.progress);
+                setStatusMessage(eventData.message);
               }
             } catch (e) {
               console.error('Error parsing SSE event:', e);
@@ -144,7 +127,7 @@ const FileGenerationModal: React.FC<FileGenerationModalProps> = ({
       
     } catch (error) {
       console.error('Error generating document:', error);
-      setCurrentStep('error');
+      setState('error');
       setError('Failed to generate document. Please try again.');
     }
   };
@@ -179,40 +162,17 @@ const FileGenerationModal: React.FC<FileGenerationModalProps> = ({
     if (open) {
       generateDocument();
     }
-    
-    // Cleanup function to close EventSource when component unmounts or modal closes
-    return () => {
-      if (eventSource) {
-        eventSource.close();
-      }
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const getStepIcon = () => {
-    switch (currentStep) {
-      case 'validating':
-      case 'preparing':
-      case 'header':
-      case 'metadata':
-      case 'processing':
-      case 'finalizing':
-      case 'complete':
+    switch (state) {
+      case 'loading':
         return <CircularProgress size={24} />;
-      case 'ready':
+      case 'complete':
         return <CheckIcon style={{ color: '#4caf50' }} />;
       case 'error':
         return <ErrorIcon style={{ color: '#f44336' }} />;
-    }
-  };
-
-  const getProgressColor = () => {
-    switch (currentStep) {
-      case 'ready':
-        return 'primary';
-      case 'error':
-        return 'secondary';
-      default:
-        return 'primary';
     }
   };
 
@@ -236,7 +196,7 @@ const FileGenerationModal: React.FC<FileGenerationModalProps> = ({
             <Typography variant="body2" style={{ marginLeft: '0.5rem', flex: 1 }}>
               {statusMessage}
             </Typography>
-            {currentStep === 'ready' && (
+            {state === 'complete' && (
               <Chip 
                 label="Complete" 
                 color="primary" 
@@ -249,12 +209,12 @@ const FileGenerationModal: React.FC<FileGenerationModalProps> = ({
           <LinearProgress 
             variant="determinate" 
             value={progress} 
-            color={getProgressColor()}
+            color={state === 'error' ? 'secondary' : 'primary'}
             style={{ marginBottom: '1rem' }}
           />
         </Box>
 
-        {currentStep === 'ready' && (
+        {state === 'complete' && (
           <Box mb={2}>
             <Typography variant="body2" color="textSecondary">
               Document includes {sections.filter(s => s.isCompleted).length} completed sections:
@@ -290,7 +250,7 @@ const FileGenerationModal: React.FC<FileGenerationModalProps> = ({
           Close
         </Button>
         
-        {currentStep === 'ready' && (
+        {state === 'complete' && (
           <Button
             onClick={handleDownload}
             color="primary"
@@ -301,7 +261,7 @@ const FileGenerationModal: React.FC<FileGenerationModalProps> = ({
           </Button>
         )}
         
-        {currentStep === 'error' && (
+        {state === 'error' && (
           <Button
             onClick={generateDocument}
             color="primary"
