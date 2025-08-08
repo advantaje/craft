@@ -3,10 +3,10 @@ import { DocumentSection, SectionData } from '../types/document.types';
 
 const DEFAULT_SECTIONS: DocumentSection[] = [
   { id: '1', name: 'Background', type: 'background', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
-  { id: '4', name: 'Product', type: 'conclusion', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
+  { id: '2', name: 'Product', type: 'conclusion', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
   { id: '3', name: 'Usage', type: 'usage', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
-  { id: '5', name: 'Model Limitations', type: 'limitations', data: { notes: '', outline: '', draft: '{"rows":[]}', reviewNotes: '' }, isCompleted: false },
-  { id: '6', name: 'Model Risk Issues', type: 'risk', data: { notes: '', outline: '', draft: '{"rows":[]}', reviewNotes: '' }, isCompleted: false }
+  { id: '4', name: 'Model Limitations', type: 'limitations', data: { notes: '', outline: '', draft: '{"rows":[]}', reviewNotes: '' }, isCompleted: false },
+  { id: '5', name: 'Model Risk Issues', type: 'risk', data: { notes: '', outline: '', draft: '{"rows":[]}', reviewNotes: '' }, isCompleted: false }
 ];
 
 export function useDocumentSections() {
@@ -56,7 +56,7 @@ export function useDocumentSections() {
 
   const canRemoveSection = useCallback((sectionId: string) => {
     // Don't allow removal of default sections (Background, Product, Usage, Model Limitations, Model Risk Issues)
-    const defaultSectionIds = ['1', '3', '4', '5', '6'];
+    const defaultSectionIds = ['1', '2', '3', '4', '5'];
     return !defaultSectionIds.includes(sectionId);
   }, []);
 
