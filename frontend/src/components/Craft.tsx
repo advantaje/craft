@@ -75,12 +75,17 @@ const Craft: React.FC = () => {
   const handleRemoveSection = (sectionId: string, event: React.MouseEvent) => {
     event.stopPropagation();
     if (canRemoveSection(sectionId)) {
-      // If we're removing the currently active tab, switch to Home tab
-      const sectionIndex = sections.findIndex(s => s.id === sectionId);
-      if (currentTab === sectionIndex + 1) { // +1 because Home tab is index 0
-        setCurrentTab(0);
+      const section = sections.find(s => s.id === sectionId);
+      const confirmed = window.confirm(`Are you sure you want to remove the "${section?.name}" section?`);
+      
+      if (confirmed) {
+        // If we're removing the currently active tab, switch to Home tab
+        const sectionIndex = sections.findIndex(s => s.id === sectionId);
+        if (currentTab === sectionIndex + 1) { // +1 because Home tab is index 0
+          setCurrentTab(0);
+        }
+        removeSection(sectionId);
       }
-      removeSection(sectionId);
     }
   };
 
