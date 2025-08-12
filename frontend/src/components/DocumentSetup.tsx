@@ -44,15 +44,15 @@ const DocumentInfoDisplay: React.FC<{ data: DocumentInfo }> = ({ data }) => {
         subheader="Retrieved from database"
         style={{ backgroundColor: '#f0f7ff' }}
       />
-      <CardContent>
+      <CardContent style={{ paddingBottom: '2rem' }}>
         <Grid container spacing={3}>
           {Object.entries(data).map(([field, value], index) => (
             <Grid item xs={12} sm={6} md={4} key={index}>
-              <Paper elevation={1} style={{ padding: '1rem', height: '100%' }}>
+              <Paper elevation={1} style={{ padding: '0.75rem', minHeight: '70px', marginBottom: '0.5rem' }}>
                 <Typography variant="subtitle2" color="textSecondary" gutterBottom>
                   {field}
                 </Typography>
-                <Typography variant="body1" style={{ fontWeight: 500 }}>
+                <Typography variant="body1" style={{ fontWeight: 500, marginTop: '0.5rem' }}>
                   {value}
                 </Typography>
               </Paper>
