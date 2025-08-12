@@ -7,7 +7,7 @@ export interface TableConfiguration {
 
 // Model Limitations table configuration
 export const MODEL_LIMITATIONS_CONFIG: TableConfiguration = {
-  sectionType: 'limitations',
+  sectionType: 'model_limitations',
   columns: [
     { id: 'item', label: 'Limitation', type: 'text', required: true, width: '200px' },
     { id: 'description', label: 'Description', type: 'text', width: '300px' },
@@ -19,7 +19,7 @@ export const MODEL_LIMITATIONS_CONFIG: TableConfiguration = {
 
 // Model Risk Issues table configuration
 export const MODEL_RISK_CONFIG: TableConfiguration = {
-  sectionType: 'risk',
+  sectionType: 'model_risk_issues',
   columns: [
     { id: 'item', label: 'Risk Issue', type: 'text', required: true, width: '200px' },
     { id: 'description', label: 'Description', type: 'text', width: '300px' },
@@ -32,9 +32,9 @@ export const MODEL_RISK_CONFIG: TableConfiguration = {
 // Helper function to get configuration by section type
 export function getTableConfiguration(sectionType: string): TableConfiguration {
   switch (sectionType) {
-    case 'limitations':
+    case 'model_limitations':
       return MODEL_LIMITATIONS_CONFIG;
-    case 'risk':
+    case 'model_risk_issues':
       return MODEL_RISK_CONFIG;
     default:
       return MODEL_LIMITATIONS_CONFIG; // Default fallback

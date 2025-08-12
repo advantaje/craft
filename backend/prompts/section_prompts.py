@@ -57,7 +57,7 @@ Notes: {notes}
 
 Create a clear, logical outline:
 """,
-        "limitations": """
+        "model_limitations": """
 You are planning a Model Limitations table with the following fixed columns:
 - Limitation (text): Name or type of the limitation
 - Description (text): Detailed description of the limitation
@@ -77,7 +77,7 @@ Create an outline that describes:
 
 Provide a clear plan for documenting model limitations:
 """,
-        "risk": """
+        "model_risk_issues": """
 You are planning a Model Risk Issues table with the following fixed columns:
 - Risk Issue (text): Name or type of the risk issue
 - Description (text): Detailed description of the risk issue
@@ -156,7 +156,7 @@ Outline: {outline}
 
 Write the {section_name} section:
 """,
-        "limitations": """
+        "model_limitations": """
 You are generating Model Limitations table data with these exact columns:
 - item (text): Name or type of the limitation
 - description (text): Detailed description of the limitation
@@ -177,7 +177,7 @@ IMPORTANT: Return ONLY valid JSON in this exact format, with no additional text:
 
 Generate the model limitations data as JSON:
 """,
-        "risk": """
+        "model_risk_issues": """
 You are generating Model Risk Issues table data with these exact columns:
 - item (text): Name or type of the risk issue
 - description (text): Detailed description of the risk issue
@@ -256,7 +256,7 @@ Draft: {draft}
 
 Provide review feedback:
 """,
-        "limitations": """
+        "model_limitations": """
 You are reviewing Model Limitations table data. The table should have these columns: item (limitation), description, quantity (severity), status (impact), notes (mitigation).
 
 Analyze the limitations data and provide feedback on:
@@ -271,7 +271,7 @@ Table data: {draft}
 
 Provide specific feedback to improve the model limitations documentation:
 """,
-        "risk": """
+        "model_risk_issues": """
 You are reviewing Model Risk Issues table data. The table should have these columns: item (risk issue), description, quantity (likelihood), status (risk level), notes (controls).
 
 Analyze the risk issues data and provide feedback on:
@@ -334,7 +334,7 @@ Review Feedback: {review_notes}
 
 Revise the {section_name} section incorporating the feedback:
 """,
-        "limitations": """
+        "model_limitations": """
 You are updating Model Limitations table data based on review feedback. The table must maintain these exact columns:
 - item (text): Name or type of limitation
 - description (text): Detailed description of the limitation
@@ -353,7 +353,7 @@ IMPORTANT: Return ONLY valid JSON in the exact format:
 
 Generate the improved model limitations data as JSON:
 """,
-        "risk": """
+        "model_risk_issues": """
 You are updating Model Risk Issues table data based on review feedback. The table must maintain these exact columns:
 - item (text): Name or type of risk issue
 - description (text): Detailed description of the risk issue

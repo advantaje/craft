@@ -12,7 +12,7 @@ import {
   Chip
 } from '@material-ui/core';
 import { Check as CheckIcon, GetApp as DownloadIcon, Error as ErrorIcon } from '@material-ui/icons';
-import { DocumentInfo, DocumentSection, DocumentGenerationProgressEvent } from '../types/document.types';
+import { DocumentInfo, DocumentSection, DocumentGenerationProgressEvent, TemplateInfo } from '../types/document.types';
 
 interface FileGenerationModalProps {
   open: boolean;
@@ -20,6 +20,7 @@ interface FileGenerationModalProps {
   documentId: string;
   documentData: DocumentInfo | null;
   sections: DocumentSection[];
+  templateInfo: TemplateInfo;
 }
 
 type GenerationState = 'loading' | 'complete' | 'error';
@@ -29,13 +30,15 @@ const FileGenerationModal: React.FC<FileGenerationModalProps> = ({
   onClose,
   documentId,
   documentData,
-  sections
+  sections,
+  templateInfo
 }) => {
   const [state, setState] = useState<GenerationState>('loading');
   const [progress, setProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState<string>('Starting document generation...');
   const [error, setError] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [filename, setFilename] = useState<string | null>(null);
 
   const resetState = () => {
     setState('loading');
@@ -43,6 +46,7 @@ const FileGenerationModal: React.FC<FileGenerationModalProps> = ({
     setStatusMessage('Starting document generation...');
     setError(null);
     setDownloadUrl(null);
+    setFilename(null);
   };
 
   const generateDocument = async () => {
@@ -60,7 +64,8 @@ const FileGenerationModal: React.FC<FileGenerationModalProps> = ({
         body: JSON.stringify({
           documentId,
           documentData,
-          sections: completedSections
+          sections: completedSections,
+          templateInfo
         })
       });
       
@@ -102,11 +107,26 @@ const FileGenerationModal: React.FC<FileGenerationModalProps> = ({
                 setStatusMessage('Document ready for download!');
                 
                 // Create blob URL for download
-                const blob = new Blob([eventData.downloadData.content], {
+                let blobData;
+                if (eventData.downloadData.isBase64) {
+                  // Decode base64 content for Word documents
+                  const binaryString = atob(eventData.downloadData.content);
+                  const bytes = new Uint8Array(binaryString.length);
+                  for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                  }
+                  blobData = bytes;
+                } else {
+                  // Use content directly for text files
+                  blobData = eventData.downloadData.content;
+                }
+                
+                const blob = new Blob([blobData], {
                   type: eventData.downloadData.contentType
                 });
                 const url = window.URL.createObjectURL(blob);
                 setDownloadUrl(url);
+                setFilename(eventData.downloadData.filename);
                 break;
               } else if (eventData.status === 'complete') {
                 // Backend says complete but not ready yet, keep loading
@@ -133,11 +153,11 @@ const FileGenerationModal: React.FC<FileGenerationModalProps> = ({
   };
 
   const handleDownload = () => {
-    if (downloadUrl) {
+    if (downloadUrl && filename) {
       // Create a temporary link to trigger download
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = `document_${documentId}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

@@ -4,12 +4,16 @@ from datetime import datetime
 import json
 import sys
 import os
+import io
 
 # Add the backend directory to Python path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from services.generation_service import GenerationService
 from services.document_generation_service import DocumentGenerationService
+
+# In-memory storage for uploaded templates
+uploaded_templates = {}
 
 
 class BaseHandler(tornado.web.RequestHandler):
@@ -215,7 +219,7 @@ class GenerateReviewHandler(BaseHandler):
 class GenerateDocumentHandler(BaseHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.document_service = DocumentGenerationService()
+        self.document_service = DocumentGenerationService(uploaded_templates)
 
     def post(self):
         try:
@@ -223,6 +227,7 @@ class GenerateDocumentHandler(BaseHandler):
             document_id = body.get('documentId', '')
             document_data = body.get('documentData', {})
             sections = body.get('sections', [])
+            template_info = body.get('templateInfo', {})
             
             if not document_id:
                 self.set_status(400)
@@ -235,20 +240,28 @@ class GenerateDocumentHandler(BaseHandler):
                 return
             
             # Generate the document content
-            content = self.document_service.generate_txt_document(
-                document_id, document_data, sections
+            doc_buffer = self.document_service.generate_docx_document(
+                document_id, document_data, sections, template_info
             )
             
+            if doc_buffer is None:
+                self.set_status(500)
+                self.write(json.dumps({"error": "Failed to generate document"}))
+                return
+            
             # Generate filename
-            filename = self.document_service.get_filename(document_id)
+            filename = self.document_service.get_filename(document_id, 'docx')
+            
+            # Get the document content as bytes
+            doc_content = doc_buffer.getvalue()
             
             # Set headers for file download
-            self.set_header("Content-Type", "text/plain; charset=utf-8")
+            self.set_header("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
             self.set_header("Content-Disposition", f"attachment; filename={filename}")
-            self.set_header("Content-Length", str(len(content.encode('utf-8'))))
+            self.set_header("Content-Length", str(len(doc_content)))
             
             # Write the file content
-            self.write(content.encode('utf-8'))
+            self.write(doc_content)
             
         except Exception as e:
             self.set_status(500)
@@ -258,7 +271,7 @@ class GenerateDocumentHandler(BaseHandler):
 class GenerateDocumentStreamHandler(BaseHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.document_service = DocumentGenerationService()
+        self.document_service = DocumentGenerationService(uploaded_templates)
 
     def post(self):
         try:
@@ -266,6 +279,7 @@ class GenerateDocumentStreamHandler(BaseHandler):
             document_id = body.get('documentId', '')
             document_data = body.get('documentData', {})
             sections = body.get('sections', [])
+            template_info = body.get('templateInfo', {})
             
             if not document_id:
                 self.set_status(400)
@@ -296,16 +310,21 @@ class GenerateDocumentStreamHandler(BaseHandler):
             
             # Generate the document with progress updates
             try:
-                content = self.document_service.generate_txt_document_with_progress(
-                    document_id, document_data, sections, send_progress
+                doc_buffer = self.document_service.generate_docx_document_with_progress(
+                    document_id, document_data, sections, send_progress, template_info
                 )
                 
-                if content is None:
+                if doc_buffer is None:
                     send_progress("error", "Failed to generate document", 0)
                     return
                 
                 # Create the download blob
-                filename = self.document_service.get_filename(document_id)
+                filename = self.document_service.get_filename(document_id, 'docx')
+                
+                # Convert BytesIO to base64 for JSON transmission
+                import base64
+                doc_content = doc_buffer.getvalue()
+                content_base64 = base64.b64encode(doc_content).decode('utf-8')
                 
                 # Send final completion event with download data
                 completion_data = {
@@ -313,9 +332,10 @@ class GenerateDocumentStreamHandler(BaseHandler):
                     "message": "Document ready for download!",
                     "progress": 100,
                     "downloadData": {
-                        "content": content,
+                        "content": content_base64,
                         "filename": filename,
-                        "contentType": "text/plain; charset=utf-8"
+                        "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        "isBase64": True
                     }
                 }
                 self.write(f"data: {json.dumps(completion_data)}\n\n")
@@ -323,6 +343,47 @@ class GenerateDocumentStreamHandler(BaseHandler):
                 
             except Exception as e:
                 send_progress("error", f"Generation failed: {str(e)}", 0)
+            
+        except Exception as e:
+            self.set_status(500)
+            self.write(json.dumps({"error": str(e)}))
+
+
+class UploadTemplateHandler(BaseHandler):
+    def post(self):
+        try:
+            if 'template' not in self.request.files:
+                self.set_status(400)
+                self.write(json.dumps({"error": "No template file provided"}))
+                return
+            
+            file_info = self.request.files['template'][0]
+            filename = file_info['filename']
+            
+            if not filename.lower().endswith('.docx'):
+                self.set_status(400)
+                self.write(json.dumps({"error": "File must be a .docx document"}))
+                return
+            
+            # Store template content in memory
+            template_content = file_info['body']
+            template_key = f"custom_template_{datetime.now().timestamp()}"
+            
+            uploaded_templates[template_key] = {
+                'filename': filename,
+                'content': template_content,
+                'uploaded_at': datetime.now().isoformat()
+            }
+            
+            response = {
+                "result": {
+                    "message": "Template uploaded successfully",
+                    "templateKey": template_key,
+                    "filename": filename
+                }
+            }
+            self.set_header("Content-Type", "application/json")
+            self.write(json.dumps(response))
             
         except Exception as e:
             self.set_status(500)
@@ -339,6 +400,7 @@ def make_app():
         (r"/api/generate-review", GenerateReviewHandler),
         (r"/api/generate-document", GenerateDocumentHandler),
         (r"/api/generate-document-stream", GenerateDocumentStreamHandler),
+        (r"/api/upload-template", UploadTemplateHandler),
     ])
 
 

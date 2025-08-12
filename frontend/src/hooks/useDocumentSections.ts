@@ -2,11 +2,11 @@ import { useState, useCallback } from 'react';
 import { DocumentSection, SectionData } from '../types/document.types';
 
 const DEFAULT_SECTIONS: DocumentSection[] = [
-  { id: '1', name: 'Background', type: 'background', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
-  { id: '2', name: 'Product', type: 'conclusion', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
-  { id: '3', name: 'Usage', type: 'usage', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
-  { id: '4', name: 'Model Limitations', type: 'limitations', data: { notes: '', outline: '', draft: '{"rows":[]}', reviewNotes: '' }, isCompleted: false },
-  { id: '5', name: 'Model Risk Issues', type: 'risk', data: { notes: '', outline: '', draft: '{"rows":[]}', reviewNotes: '' }, isCompleted: false }
+  { id: '1', name: 'Background', type: 'background', templateTag: 'background', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
+  { id: '2', name: 'Product', type: 'conclusion', templateTag: 'product', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
+  { id: '3', name: 'Usage', type: 'usage', templateTag: 'usage', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
+  { id: '4', name: 'Model Limitations', type: 'model_limitations', templateTag: 'model_limitations', data: { notes: '', outline: '', draft: '{"rows":[]}', reviewNotes: '' }, isCompleted: false },
+  { id: '5', name: 'Model Risk Issues', type: 'model_risk_issues', templateTag: 'model_risk_issues', data: { notes: '', outline: '', draft: '{"rows":[]}', reviewNotes: '' }, isCompleted: false }
 ];
 
 export function useDocumentSections() {
@@ -36,11 +36,12 @@ export function useDocumentSections() {
     );
   }, []);
 
-  const addSection = useCallback((name: string) => {
+  const addSection = useCallback((name: string, templateTag?: string) => {
     const newSection: DocumentSection = {
       id: Date.now().toString(),
       name: name.trim(),
       type: 'custom', // Custom sections use generic prompts
+      templateTag: templateTag?.trim() || undefined,
       data: { notes: '', outline: '', draft: '', reviewNotes: '' },
       isCompleted: false
     };
@@ -60,6 +61,16 @@ export function useDocumentSections() {
     return !defaultSectionIds.includes(sectionId);
   }, []);
 
+  const updateSectionTemplateTag = useCallback((sectionId: string, templateTag: string) => {
+    setSections(prevSections =>
+      prevSections.map(section =>
+        section.id === sectionId
+          ? { ...section, templateTag: templateTag.trim() || undefined }
+          : section
+      )
+    );
+  }, []);
+
   const getSectionById = useCallback((sectionId: string) => {
     return sections.find(section => section.id === sectionId);
   }, [sections]);
@@ -67,6 +78,7 @@ export function useDocumentSections() {
   return {
     sections,
     updateSectionData,
+    updateSectionTemplateTag,
     toggleSectionCompletion,
     addSection,
     removeSection,

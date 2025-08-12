@@ -8,13 +8,15 @@ import uuid
 import tempfile
 import time
 import json
+from docxtpl import DocxTemplate
+import io
 
 
 class DocumentGenerationService:
     """Handles document file generation from section data with progress callbacks"""
     
-    def __init__(self):
-        pass
+    def __init__(self, uploaded_templates=None):
+        self.uploaded_templates = uploaded_templates or {}
     
     def generate_txt_document_with_progress(self, document_id: str, document_data: dict, sections: list, progress_callback=None):
         """
@@ -113,6 +115,120 @@ class DocumentGenerationService:
         
         return final_content
     
+    def generate_docx_document_with_progress(self, document_id: str, document_data: dict, sections: list, progress_callback=None, template_info=None):
+        """
+        Generate a Word document from document data and sections with progress updates
+        
+        Args:
+            document_id: The document ID from the lookup
+            document_data: Dictionary of document metadata
+            sections: List of completed sections with draft content
+            progress_callback: Function to call with progress updates
+            template_info: Dictionary with template information (type, name, etc.)
+            
+        Returns:
+            BytesIO object containing the Word document
+        """
+        def send_status(status: str, message: str, progress: int = 0):
+            if progress_callback:
+                progress_callback(status, message, progress)
+        
+        send_status("validating", "Validating sections...", 10)
+        time.sleep(0.5)
+        
+        if not sections:
+            send_status("error", "No completed sections found", 0)
+            return None
+        
+        send_status("loading", "Loading Word template...", 20)
+        time.sleep(0.3)
+        
+        try:
+            # Load the template based on template_info
+            if template_info and template_info.get('type') == 'custom':
+                # Look for uploaded template in memory
+                template_name = template_info.get('name', '')
+                template_found = False
+                
+                for template_key, template_data in self.uploaded_templates.items():
+                    if template_data.get('filename') == template_name:
+                        # Load template from memory
+                        template_content = template_data['content']
+                        doc = DocxTemplate(io.BytesIO(template_content))
+                        template_found = True
+                        send_status("loading", f"Loading custom template: {template_name}", 20)
+                        break
+                
+                if not template_found:
+                    send_status("error", f"Custom template '{template_name}' not found in memory", 0)
+                    return None
+            else:
+                # Load default template - try template-tagged.docx first, then fallback to other names
+                template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'template-tagged.docx')
+                if not os.path.exists(template_path):
+                    # Fallback to alternative template names
+                    template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'template-tagged.docx.docx')
+                    if not os.path.exists(template_path):
+                        template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'template-tagged-v2.docx')
+                
+                doc = DocxTemplate(template_path)
+                send_status("loading", "Loading default template", 20)
+            send_status("preparing", "Preparing document context...", 30)
+            
+            # Create context dictionary with template tags
+            context = {}
+            
+            # Process each section
+            section_progress_start = 40
+            section_progress_range = 40  # 40% to 80%
+            
+            for i, section in enumerate(sections):
+                section_name = section.get('name', 'Untitled Section')
+                section_draft = section.get('data', {}).get('draft', '')
+                section_type = section.get('type', 'default')
+                template_tag = section.get('templateTag')
+                
+                if not section_draft.strip():
+                    continue
+                
+                # Calculate progress for this section
+                section_progress = section_progress_start + int((i / len(sections)) * section_progress_range)
+                send_status("processing", f"Processing {section_name} section...", section_progress)
+                
+                # Use template tag directly from section data
+                if template_tag and template_tag.strip():
+                    # Clean and format section content
+                    cleaned_content = self._clean_section_content(section_draft, section_type)
+                    context[template_tag.strip()] = cleaned_content
+                else:
+                    send_status("processing", f"Skipping {section_name} - no template tag", section_progress)
+                
+                time.sleep(0.3)
+            
+            send_status("rendering", "Rendering Word document...", 80)
+            time.sleep(0.5)
+            
+            # Render the document with context
+            doc.render(context)
+            
+            # Save to BytesIO
+            doc_buffer = io.BytesIO()
+            doc.save(doc_buffer)
+            doc_buffer.seek(0)
+            
+            send_status("complete", "Document generation complete!", 100)
+            return doc_buffer
+            
+        except Exception as e:
+            send_status("error", f"Failed to generate document: {str(e)}", 0)
+            return None
+    
+    def generate_docx_document(self, document_id: str, document_data: dict, sections: list, template_info=None):
+        """
+        Generate a Word document from document data and sections (legacy method)
+        """
+        return self.generate_docx_document_with_progress(document_id, document_data, sections, None, template_info)
+    
     def generate_txt_document(self, document_id: str, document_data: dict, sections: list) -> str:
         """
         Generate a formatted text document from document data and sections (legacy method)
@@ -130,7 +246,7 @@ class DocumentGenerationService:
         Returns:
             Cleaned and formatted content
         """
-        # Check if content is JSON (for table and risk sections)
+        # Check if content is JSON (for model_limitations and model_risk_issues sections)
         try:
             table_data = json.loads(content)
             if 'rows' in table_data:
@@ -172,7 +288,7 @@ class DocumentGenerationService:
         
         Args:
             table_data: Dictionary with 'rows' containing table data
-            section_type: Type of section ('table' for limitations, 'risk' for risk issues)
+            section_type: Type of section ('model_limitations' for limitations, 'model_risk_issues' for risk issues)
             
         Returns:
             Formatted text table
@@ -181,7 +297,7 @@ class DocumentGenerationService:
             return "Empty table"
         
         # Define column headers, keys, and widths based on section type
-        if section_type == 'risk':
+        if section_type == 'model_risk_issues':
             # Model Risk Issues columns: (display_name, json_key, width)
             columns = [
                 ('Risk Issue', 'item', 25),
@@ -202,10 +318,22 @@ class DocumentGenerationService:
         
         lines = []
         
+        # Calculate the maximum width needed for each column
+        column_widths = []
+        for col_name, col_key, min_width in columns:
+            # Start with header width and minimum width
+            max_width = max(len(col_name), min_width)
+            # Check all data values for this column
+            for row in table_data['rows']:
+                value = str(row.get(col_key, '-'))
+                max_width = max(max_width, len(value))
+            column_widths.append(max_width)
+        
         # Create header row
         header = "|"
         separator = "|"
-        for col_name, col_key, width in columns:
+        for i, (col_name, col_key, min_width) in enumerate(columns):
+            width = column_widths[i]
             header += f" {col_name.ljust(width)} |"
             separator += "-" * (width + 2) + "|"
         
@@ -215,11 +343,9 @@ class DocumentGenerationService:
         # Add data rows
         for row in table_data['rows']:
             row_line = "|"
-            for col_name, col_key, width in columns:
+            for i, (col_name, col_key, min_width) in enumerate(columns):
+                width = column_widths[i]
                 value = str(row.get(col_key, '-'))
-                # Truncate if too long
-                if len(value) > width:
-                    value = value[:width-3] + "..."
                 row_line += f" {value.ljust(width)} |"
             lines.append(row_line)
         
@@ -252,16 +378,17 @@ class DocumentGenerationService:
             os.close(fd)
             raise e
     
-    def get_filename(self, document_id: str) -> str:
+    def get_filename(self, document_id: str, file_type: str = 'docx') -> str:
         """
         Generate a filename for the document
         
         Args:
             document_id: The document ID
+            file_type: File extension (docx or txt)
             
         Returns:
             Suggested filename
         """
         safe_id = "".join(c for c in document_id if c.isalnum() or c in ('-', '_'))
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        return f"document_{safe_id}_{timestamp}.txt"
+        return f"document_{safe_id}_{timestamp}.{file_type}"

@@ -55,8 +55,8 @@ class GenerationService:
             # Get section-specific prompt
             prompt = self.prompts.get_draft_prompt(section_type, section_name, notes, outline)
             
-            # For limitations and risk sections, use JSON mode
-            if section_type in ['limitations', 'risk']:
+            # For model_limitations and model_risk_issues sections, use JSON mode
+            if section_type in ['model_limitations', 'model_risk_issues']:
                 response = self.client.chat.completions.create(
                     model=self.model,
                     messages=[
@@ -122,8 +122,8 @@ class GenerationService:
             # Get section-specific revision prompt
             prompt = self.prompts.get_revision_prompt(section_type, section_name, draft, review_notes)
             
-            # For limitations and risk sections, use JSON mode
-            if section_type in ['limitations', 'risk']:
+            # For model_limitations and model_risk_issues sections, use JSON mode
+            if section_type in ['model_limitations', 'model_risk_issues']:
                 response = self.client.chat.completions.create(
                     model=self.model,
                     messages=[

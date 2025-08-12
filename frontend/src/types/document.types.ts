@@ -9,6 +9,7 @@ export interface DocumentSection {
   id: string;
   name: string;
   type: string;
+  templateTag?: string;
   data: SectionData;
   isCompleted: boolean;
 }
@@ -28,6 +29,12 @@ export interface TableData {
 
 export interface DocumentInfo {
   [key: string]: string;
+}
+
+export interface TemplateInfo {
+  name: string;
+  type: 'default' | 'custom';
+  isUploaded?: boolean;
 }
 
 export interface HelloResponse {
@@ -73,6 +80,7 @@ export interface GenerateDocumentRequest {
   documentId: string;
   documentData: DocumentInfo | null;
   sections: DocumentSection[];
+  templateInfo?: TemplateInfo;
 }
 
 export interface GenerateDocumentResponse {
@@ -80,12 +88,13 @@ export interface GenerateDocumentResponse {
 }
 
 export interface DocumentGenerationProgressEvent {
-  status: 'validating' | 'preparing' | 'header' | 'metadata' | 'processing' | 'finalizing' | 'complete' | 'ready' | 'error';
+  status: 'validating' | 'preparing' | 'loading' | 'rendering' | 'header' | 'metadata' | 'processing' | 'finalizing' | 'complete' | 'ready' | 'error';
   message: string;
   progress: number;
   downloadData?: {
     content: string;
     filename: string;
     contentType: string;
+    isBase64?: boolean;
   };
 }

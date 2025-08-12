@@ -33,13 +33,15 @@ interface TableWorkflowProps {
   tableConfig: TableConfiguration;
   onSectionUpdate: (sectionId: string, field: keyof SectionData, value: string) => void;
   onToggleCompletion: (sectionId: string) => void;
+  onTemplateTagUpdate: (sectionId: string, templateTag: string) => void;
 }
 
 const TableWorkflow: React.FC<TableWorkflowProps> = ({
   section,
   tableConfig,
   onSectionUpdate,
-  onToggleCompletion
+  onToggleCompletion,
+  onTemplateTagUpdate
 }) => {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
@@ -187,9 +189,21 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
   return (
     <>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h4" gutterBottom>
-          {section.name} (Table)
-        </Typography>
+        <Box>
+          <Typography variant="h4" gutterBottom>
+            {section.name} (Table)
+          </Typography>
+          <TextField
+            label="Template Tag"
+            value={section.templateTag || ''}
+            disabled={true}
+            size="small"
+            variant="outlined"
+            placeholder="e.g., model_limitations, model_risk_issues"
+            helperText="Template placeholder name for Word document (read-only)"
+            style={{ width: '300px', marginBottom: '8px' }}
+          />
+        </Box>
         <Box>
           {!hasTableData() && (
             <Chip

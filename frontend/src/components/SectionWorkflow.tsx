@@ -29,12 +29,14 @@ interface SectionWorkflowProps {
   section: DocumentSection;
   onSectionUpdate: (sectionId: string, field: keyof SectionData, value: string) => void;
   onToggleCompletion: (sectionId: string) => void;
+  onTemplateTagUpdate: (sectionId: string, templateTag: string) => void;
 }
 
 const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
   section,
   onSectionUpdate,
-  onToggleCompletion
+  onToggleCompletion,
+  onTemplateTagUpdate
 }) => {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
@@ -137,9 +139,21 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
   return (
     <>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h4" gutterBottom>
-          {section.name}
-        </Typography>
+        <Box>
+          <Typography variant="h4" gutterBottom>
+            {section.name}
+          </Typography>
+          <TextField
+            label="Template Tag"
+            value={section.templateTag || ''}
+            onChange={(e) => onTemplateTagUpdate(section.id, e.target.value)}
+            size="small"
+            variant="outlined"
+            placeholder="e.g., background, product, usage"
+            helperText="Template placeholder name for Word document"
+            style={{ width: '300px', marginBottom: '8px' }}
+          />
+        </Box>
         <Box>
           {!section.data.draft.trim() && (
             <Chip

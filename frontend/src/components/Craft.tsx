@@ -19,8 +19,8 @@ import {
 import { Add as AddIcon, Check as CheckIcon, GetApp as DownloadIcon, Close as CloseIcon } from '@material-ui/icons';
 import { Link } from 'react-router-dom';
 import { useDocumentSections } from '../hooks/useDocumentSections';
-import { DocumentInfo, SectionData } from '../types/document.types';
-import DocumentLookup from './DocumentLookup';
+import { DocumentInfo, SectionData, TemplateInfo } from '../types/document.types';
+import DocumentSetup from './DocumentSetup';
 import SectionWorkflow from './SectionWorkflow';
 import TableWorkflow from './TableWorkflow';
 import FileGenerationModal from './FileGenerationModal';
@@ -44,24 +44,38 @@ const Craft: React.FC = () => {
   const [currentTab, setCurrentTab] = useState(0);
   const [addTabDialog, setAddTabDialog] = useState(false);
   const [newTabName, setNewTabName] = useState('');
+  const [newTabTemplateTag, setNewTabTemplateTag] = useState('');
   const [documentData, setDocumentData] = useState<DocumentInfo | null>(null);
   const [documentId, setDocumentId] = useState('');
   const [showGenerationModal, setShowGenerationModal] = useState(false);
+  const [templateInfo, setTemplateInfo] = useState<TemplateInfo>({
+    name: 'template-tagged',
+    type: 'default'
+  });
   
   const {
     sections,
     updateSectionData,
+    updateSectionTemplateTag,
     toggleSectionCompletion,
     addSection,
     removeSection,
     canRemoveSection
   } = useDocumentSections();
 
-  // Check if all sections are complete and document lookup is done
+  // Check if document setup is complete (document found + template selected/uploaded)
+  const isDocumentSetupComplete = (): boolean => {
+    const documentFound = documentData !== null;
+    const templateReady = templateInfo.type === 'default' || 
+                         (templateInfo.type === 'custom' && templateInfo.isUploaded === true);
+    return documentFound && templateReady;
+  };
+
+  // Check if all sections are complete and document setup is done
   const isAllComplete = () => {
-    const homeComplete = documentData !== null;
+    const setupComplete = isDocumentSetupComplete();
     const sectionsComplete = sections.every(section => section.isCompleted);
-    return homeComplete && sectionsComplete;
+    return setupComplete && sectionsComplete;
   };
 
   const handleTabChange = (event: React.ChangeEvent<{}>, newValue: number) => {
@@ -91,9 +105,10 @@ const Craft: React.FC = () => {
 
   const handleAddTab = () => {
     if (newTabName.trim()) {
-      addSection(newTabName);
+      addSection(newTabName, newTabTemplateTag);
       setCurrentTab(sections.length + 1);
       setNewTabName('');
+      setNewTabTemplateTag('');
     }
     setAddTabDialog(false);
   };
@@ -104,6 +119,10 @@ const Craft: React.FC = () => {
 
   const handleDocumentFound = (data: DocumentInfo | null) => {
     setDocumentData(data);
+  };
+
+  const handleTemplateChange = (newTemplateInfo: TemplateInfo) => {
+    setTemplateInfo(newTemplateInfo);
   };
 
   return (
@@ -135,7 +154,7 @@ const Craft: React.FC = () => {
               label={
                 <Box display="flex" alignItems="center" justifyContent="center" width="100%">
                   <span>Home</span>
-                  {documentData && (
+                  {isDocumentSetupComplete() && (
                     <CheckIcon 
                       color="primary" 
                       style={{ marginLeft: '0.5rem', fontSize: '18px' }} 
@@ -224,28 +243,32 @@ const Craft: React.FC = () => {
           </Box>
           
           <TabPanel value={currentTab} index={0}>
-            <DocumentLookup 
+            <DocumentSetup 
               onDocumentFound={handleDocumentFound}
               documentId={documentId}
               setDocumentId={setDocumentId}
               documentData={documentData}
+              templateInfo={templateInfo}
+              onTemplateChange={handleTemplateChange}
             />
           </TabPanel>
 
           {sections.map((section, index) => (
             <TabPanel key={section.id} value={currentTab} index={index + 1}>
-              {section.type === 'limitations' || section.type === 'risk' ? (
+              {section.type === 'model_limitations' || section.type === 'model_risk_issues' ? (
                 <TableWorkflow
                   section={section}
                   tableConfig={getTableConfiguration(section.type)}
                   onSectionUpdate={handleSectionUpdate}
                   onToggleCompletion={toggleSectionCompletion}
+                  onTemplateTagUpdate={updateSectionTemplateTag}
                 />
               ) : (
                 <SectionWorkflow
                   section={section}
                   onSectionUpdate={handleSectionUpdate}
                   onToggleCompletion={toggleSectionCompletion}
+                  onTemplateTagUpdate={updateSectionTemplateTag}
                 />
               )}
             </TabPanel>
@@ -253,7 +276,7 @@ const Craft: React.FC = () => {
         </Paper>
       </Container>
 
-      <Dialog open={addTabDialog} onClose={() => setAddTabDialog(false)}>
+      <Dialog open={addTabDialog} onClose={() => { setAddTabDialog(false); setNewTabName(''); setNewTabTemplateTag(''); }}>
         <DialogTitle>Add New Section</DialogTitle>
         <DialogContent>
           <TextField
@@ -263,11 +286,21 @@ const Craft: React.FC = () => {
             fullWidth
             value={newTabName}
             onChange={(e) => setNewTabName(e.target.value)}
+            style={{ marginBottom: '16px' }}
+          />
+          <TextField
+            margin="dense"
+            label="Template Tag"
+            fullWidth
+            value={newTabTemplateTag}
+            onChange={(e) => setNewTabTemplateTag(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleAddTab()}
+            placeholder="e.g., executive_summary, methodology"
+            helperText="Template placeholder name for Word document (optional)"
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAddTabDialog(false)}>Cancel</Button>
+          <Button onClick={() => { setAddTabDialog(false); setNewTabName(''); setNewTabTemplateTag(''); }}>Cancel</Button>
           <Button onClick={handleAddTab} color="primary" disabled={!newTabName.trim()}>
             Add Section
           </Button>
@@ -280,6 +313,7 @@ const Craft: React.FC = () => {
         documentId={documentId}
         documentData={documentData}
         sections={sections}
+        templateInfo={templateInfo}
       />
     </>
   );
