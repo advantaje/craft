@@ -13,6 +13,7 @@ export interface DocumentSection {
   data: SectionData;
   isCompleted: boolean;
   completionType?: 'normal' | 'empty';
+  wasCompleted?: boolean;
 }
 
 export interface TableColumn {
@@ -86,16 +87,4 @@ export interface GenerateDocumentRequest {
 
 export interface GenerateDocumentResponse {
   downloadUrl?: string;
-}
-
-export interface DocumentGenerationProgressEvent {
-  status: 'validating' | 'preparing' | 'loading' | 'rendering' | 'header' | 'metadata' | 'processing' | 'finalizing' | 'complete' | 'ready' | 'error';
-  message: string;
-  progress: number;
-  downloadData?: {
-    content: string;
-    filename: string;
-    contentType: string;
-    isBase64?: boolean;
-  };
 }

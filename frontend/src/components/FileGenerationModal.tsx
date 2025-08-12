@@ -12,10 +12,8 @@ import {
   Chip
 } from '@material-ui/core';
 import { Check as CheckIcon, GetApp as DownloadIcon, Error as ErrorIcon } from '@material-ui/icons';
-import { DocumentInfo, DocumentSection, DocumentGenerationProgressEvent, TemplateInfo } from '../types/document.types';
-
-// Use environment variable for API base URL
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8888/api';
+import { DocumentInfo, DocumentSection, TemplateInfo } from '../types/document.types';
+import { generateDocument as generateDocumentAPI } from '../services/api.service';
 
 interface FileGenerationModalProps {
   open: boolean;
@@ -76,93 +74,27 @@ const FileGenerationModal: React.FC<FileGenerationModalProps> = ({
           return section;
         });
       
-      const response = await fetch(`${API_BASE_URL}/generate-document-stream`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          documentId,
-          documentData,
-          sections: completedSections,
-          templateInfo
-        })
+      // Generate document using regular API
+      setState('loading');
+      setStatusMessage('Generating document...');
+      setProgress(50);
+      
+      const result = await generateDocumentAPI({
+        documentId,
+        documentData,
+        sections: completedSections,
+        templateInfo
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to start document generation');
-      }
-      
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      
-      if (!reader) {
-        throw new Error('No response body');
-      }
-      
-      // Read the SSE stream
-      while (true) {
-        const { done, value } = await reader.read();
-        
-        if (done) {
-          break;
-        }
-        
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-        
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const eventData: DocumentGenerationProgressEvent = JSON.parse(line.substring(6));
-              
-              // Map backend statuses to simplified states
-              if (eventData.status === 'error') {
-                setState('error');
-                setError(eventData.message);
-                break;
-              } else if (eventData.status === 'ready' && eventData.downloadData) {
-                setState('complete');
-                setProgress(100);
-                setStatusMessage('Document ready for download!');
-                
-                // Create blob URL for download
-                let blobData;
-                if (eventData.downloadData.isBase64) {
-                  // Decode base64 content for Word documents
-                  const binaryString = atob(eventData.downloadData.content);
-                  const bytes = new Uint8Array(binaryString.length);
-                  for (let i = 0; i < binaryString.length; i++) {
-                    bytes[i] = binaryString.charCodeAt(i);
-                  }
-                  blobData = bytes;
-                } else {
-                  // Use content directly for text files
-                  blobData = eventData.downloadData.content;
-                }
-                
-                const blob = new Blob([blobData], {
-                  type: eventData.downloadData.contentType
-                });
-                const url = window.URL.createObjectURL(blob);
-                setDownloadUrl(url);
-                setFilename(eventData.downloadData.filename);
-                break;
-              } else if (eventData.status === 'complete') {
-                // Backend says complete but not ready yet, keep loading
-                setProgress(eventData.progress);
-                setStatusMessage(eventData.message);
-              } else {
-                // All other statuses are part of loading
-                setState('loading');
-                setProgress(eventData.progress);
-                setStatusMessage(eventData.message);
-              }
-            } catch (e) {
-              console.error('Error parsing SSE event:', e);
-            }
-          }
-        }
+      if (result.downloadUrl) {
+        setState('complete');
+        setProgress(100);
+        setStatusMessage('Document ready for download!');
+        setDownloadUrl(result.downloadUrl);
+        setFilename(`${documentId}.docx`);
+      } else {
+        setState('error');
+        setError('Failed to generate document');
       }
       
     } catch (error) {
@@ -257,11 +189,11 @@ const FileGenerationModal: React.FC<FileGenerationModalProps> = ({
         {state === 'complete' && (
           <Box mb={2}>
             <Typography variant="body2" color="textSecondary">
-              Document includes {sections.filter(s => s.isCompleted).length} completed sections:
+              Document includes {sections.filter(s => s.isCompleted && s.completionType !== 'empty').length} included sections:
             </Typography>
             <Box mt={1}>
               {sections
-                .filter(section => section.isCompleted)
+                .filter(section => section.isCompleted && section.completionType !== 'empty')
                 .map(section => (
                   <Chip
                     key={section.id}

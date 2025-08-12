@@ -32,7 +32,7 @@ interface TableWorkflowProps {
   section: DocumentSection;
   tableConfig: TableConfiguration;
   onSectionUpdate: (sectionId: string, field: keyof SectionData, value: string) => void;
-  onToggleCompletion: (sectionId: string, completionType?: 'normal' | 'empty') => void;
+  onToggleCompletion: (sectionId: string, completionType?: 'normal' | 'empty' | 'unexclude') => void;
   onTemplateTagUpdate: (sectionId: string, templateTag: string) => void;
 }
 

@@ -245,86 +245,6 @@ class GenerateDocumentHandler(BaseHandler):
             self.write(json.dumps({"error": str(e)}))
 
 
-class GenerateDocumentStreamHandler(BaseHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.document_service = DocumentGenerationService(uploaded_templates)
-
-    def post(self):
-        try:
-            body = json.loads(self.request.body)
-            document_id = body.get('documentId', '')
-            document_data = body.get('documentData', {})
-            sections = body.get('sections', [])
-            template_info = body.get('templateInfo', {})
-            
-            if not document_id:
-                self.set_status(400)
-                self.write(json.dumps({"error": "Document ID is required"}))
-                return
-            
-            if not sections:
-                self.set_status(400)
-                self.write(json.dumps({"error": "At least one completed section is required"}))
-                return
-            
-            # Set up SSE headers
-            self.set_header("Content-Type", "text/event-stream")
-            self.set_header("Cache-Control", "no-cache")
-            self.set_header("Connection", "keep-alive")
-            self.set_header("Access-Control-Allow-Origin", FRONTEND_URL)
-            self.set_header("Access-Control-Allow-Headers", "Content-Type")
-            
-            # Progress callback function
-            def send_progress(status: str, message: str, progress: int = 0):
-                event_data = {
-                    "status": status,
-                    "message": message,
-                    "progress": progress
-                }
-                self.write(f"data: {json.dumps(event_data)}\n\n")
-                self.flush()
-            
-            # Generate the document with progress updates
-            try:
-                doc_buffer = self.document_service.generate_docx_document_with_progress(
-                    document_id, document_data, sections, send_progress, template_info
-                )
-                
-                if doc_buffer is None:
-                    send_progress("error", "Failed to generate document", 0)
-                    return
-                
-                # Create the download blob
-                filename = self.document_service.get_filename(document_id, 'docx')
-                
-                # Convert BytesIO to base64 for JSON transmission
-                import base64
-                doc_content = doc_buffer.getvalue()
-                content_base64 = base64.b64encode(doc_content).decode('utf-8')
-                
-                # Send final completion event with download data
-                completion_data = {
-                    "status": "ready",
-                    "message": "Document ready for download!",
-                    "progress": 100,
-                    "downloadData": {
-                        "content": content_base64,
-                        "filename": filename,
-                        "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        "isBase64": True
-                    }
-                }
-                self.write(f"data: {json.dumps(completion_data)}\n\n")
-                self.flush()
-                
-            except Exception as e:
-                send_progress("error", f"Generation failed: {str(e)}", 0)
-            
-        except Exception as e:
-            self.set_status(500)
-            self.write(json.dumps({"error": str(e)}))
-
 
 class UploadTemplateHandler(BaseHandler):
     def post(self):
@@ -376,7 +296,6 @@ def make_app():
         (r"/api/generate-draft-from-review", GenerateDraftFromReviewHandler),
         (r"/api/generate-review", GenerateReviewHandler),
         (r"/api/generate-document", GenerateDocumentHandler),
-        (r"/api/generate-document-stream", GenerateDocumentStreamHandler),
         (r"/api/upload-template", UploadTemplateHandler),
     ])
 

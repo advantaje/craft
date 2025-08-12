@@ -26,17 +26,39 @@ export function useDocumentSections() {
     );
   }, []);
 
-  const toggleSectionCompletion = useCallback((sectionId: string, completionType: 'normal' | 'empty' = 'normal') => {
+  const toggleSectionCompletion = useCallback((sectionId: string, completionType: 'normal' | 'empty' | 'unexclude' = 'normal') => {
     setSections(prevSections =>
-      prevSections.map(section =>
-        section.id === sectionId
-          ? { 
-              ...section, 
-              isCompleted: !section.isCompleted,
-              completionType: section.isCompleted ? undefined : completionType
-            }
-          : section
-      )
+      prevSections.map(section => {
+        if (section.id !== sectionId) return section;
+
+        // Handle unexcluding
+        if (completionType === 'unexclude' && section.completionType === 'empty') {
+          return {
+            ...section,
+            isCompleted: section.wasCompleted || false,
+            completionType: section.wasCompleted ? 'normal' : undefined,
+            wasCompleted: undefined
+          };
+        }
+
+        // Handle excluding
+        if (completionType === 'empty') {
+          return {
+            ...section,
+            wasCompleted: section.isCompleted,
+            isCompleted: true,
+            completionType: 'empty'
+          };
+        }
+
+        // Handle normal toggle (existing logic)
+        return {
+          ...section,
+          isCompleted: !section.isCompleted,
+          completionType: section.isCompleted ? undefined : (completionType === 'normal' ? 'normal' : undefined),
+          wasCompleted: undefined
+        };
+      })
     );
   }, []);
 

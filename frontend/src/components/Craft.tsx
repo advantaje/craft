@@ -131,7 +131,9 @@ const Craft: React.FC = () => {
   const handleTabContextMenu = (event: React.MouseEvent, sectionId: string) => {
     event.preventDefault();
     const section = sections.find(s => s.id === sectionId);
-    if (section && !section.isCompleted) {
+    // Show context menu for all sections except normally completed ones (they can be excluded)
+    // and excluded sections (they can be unexcluded)
+    if (section) {
       setContextMenu({
         mouseX: event.clientX - 2,
         mouseY: event.clientY - 4,
@@ -146,7 +148,14 @@ const Craft: React.FC = () => {
 
   const handleExcludeSection = () => {
     if (contextMenu) {
-      toggleSectionCompletion(contextMenu.sectionId, 'empty');
+      const section = sections.find(s => s.id === contextMenu.sectionId);
+      if (section?.completionType === 'empty') {
+        // Unexclude the section
+        toggleSectionCompletion(contextMenu.sectionId, 'unexclude');
+      } else {
+        // Exclude the section
+        toggleSectionCompletion(contextMenu.sectionId, 'empty');
+      }
       handleCloseContextMenu();
     }
   };
@@ -401,7 +410,10 @@ const Craft: React.FC = () => {
         }
       >
         <MenuItem onClick={handleExcludeSection}>
-          🚫 Exclude Section
+          {sections.find(s => s.id === contextMenu?.sectionId)?.completionType === 'empty' 
+            ? '✅ Include Section'
+            : '🚫 Exclude Section'
+          }
         </MenuItem>
       </Menu>
     </>

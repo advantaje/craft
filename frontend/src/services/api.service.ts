@@ -58,23 +58,12 @@ export async function generateDraftFromReview(request: GenerateDraftFromReviewRe
 
 export async function generateDocument(request: GenerateDocumentRequest): Promise<GenerateDocumentResponse> {
   try {
-    const response = await fetch(`${API_BASE_URL}/generate-document`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
+    const response = await axiosInstance.post<Blob>('/generate-document', request, {
+      responseType: 'blob'
     });
 
-    if (!response.ok) {
-      throw new Error('Failed to generate document');
-    }
-
-    // For file download, we need to handle the response as a blob
-    const blob = await response.blob();
-    
     // Create a download URL for the blob
-    const downloadUrl = window.URL.createObjectURL(blob);
+    const downloadUrl = window.URL.createObjectURL(response.data);
     
     return { downloadUrl };
   } catch (error) {
@@ -82,6 +71,7 @@ export async function generateDocument(request: GenerateDocumentRequest): Promis
     throw error;
   }
 }
+
 
 export async function uploadTemplate(file: File): Promise<{templateKey: string, filename: string}> {
   try {
