@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import {
   HelloResponse,
   DocumentInfo,
-  DocumentLookupRequest,
+  ReviewLookupRequest,
   GenerateOutlineRequest,
   GenerateDraftFromOutlineRequest,
   GenerateReviewRequest,
@@ -11,7 +11,7 @@ import {
   GenerateDocumentResponse,
 } from '../types/document.types';
 
-const API_BASE_URL = 'http://localhost:8888/api';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8888/api';
 
 // Create axios instance
 export const axiosInstance: AxiosInstance = axios.create({
@@ -31,8 +31,8 @@ export async function getHello(): Promise<HelloResponse> {
   return response.data.result;
 }
 
-export async function lookupDocument(request: DocumentLookupRequest): Promise<DocumentInfo> {
-  const response = await axiosInstance.post<ApiResponse<DocumentInfo>>('/document-lookup', request);
+export async function lookupReview(request: ReviewLookupRequest): Promise<DocumentInfo> {
+  const response = await axiosInstance.post<ApiResponse<DocumentInfo>>('/review-lookup', request);
   return response.data.result;
 }
 
@@ -79,6 +79,24 @@ export async function generateDocument(request: GenerateDocumentRequest): Promis
     return { downloadUrl };
   } catch (error) {
     console.error(`API Error: ${API_BASE_URL}/generate-document`, error);
+    throw error;
+  }
+}
+
+export async function uploadTemplate(file: File): Promise<{templateKey: string, filename: string}> {
+  try {
+    const formData = new FormData();
+    formData.append('template', file);
+
+    const response = await axiosInstance.post<ApiResponse<{templateKey: string, filename: string}>>('/upload-template', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    return response.data.result;
+  } catch (error) {
+    console.error(`API Error: ${API_BASE_URL}/upload-template`, error);
     throw error;
   }
 }

@@ -15,7 +15,7 @@ import {
   StepLabel,
   Chip
 } from '@material-ui/core';
-import { Refresh as RefreshIcon, Check as CheckIcon, Warning as WarningIcon } from '@material-ui/icons';
+import { Refresh as RefreshIcon, Check as CheckIcon, Warning as WarningIcon, Block as BlockIcon } from '@material-ui/icons';
 import { DocumentSection, SectionData } from '../types/document.types';
 import { 
   generateOutline, 
@@ -28,7 +28,7 @@ import FormattedDocument from './FormattedDocument';
 interface SectionWorkflowProps {
   section: DocumentSection;
   onSectionUpdate: (sectionId: string, field: keyof SectionData, value: string) => void;
-  onToggleCompletion: (sectionId: string) => void;
+  onToggleCompletion: (sectionId: string, completionType?: 'normal' | 'empty') => void;
   onTemplateTagUpdate: (sectionId: string, templateTag: string) => void;
 }
 
@@ -155,7 +155,20 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
           />
         </Box>
         <Box>
-          {!section.data.draft.trim() && (
+          {section.completionType === 'empty' ? (
+            <Chip
+              icon={<BlockIcon style={{ fontSize: '18px' }} />}
+              label="Section Excluded"
+              variant="outlined"
+              style={{ 
+                marginRight: '1rem',
+                backgroundColor: '#f3e5f5',
+                borderColor: '#9c27b0',
+                color: '#7b1fa2',
+                paddingLeft: '8px'
+              }}
+            />
+          ) : !section.data.draft.trim() && (
             <Chip
               icon={<WarningIcon style={{ fontSize: '18px' }} />}
               label="Draft required to complete"
@@ -173,7 +186,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
           <Button
             variant={section.isCompleted ? "outlined" : "contained"}
             color={section.isCompleted ? "secondary" : "primary"}
-            onClick={() => onToggleCompletion(section.id)}
+            onClick={() => onToggleCompletion(section.id, 'normal')}
             disabled={!section.data.draft.trim()}
             startIcon={section.isCompleted ? undefined : <CheckIcon />}
             size="large"

@@ -26,11 +26,15 @@ export function useDocumentSections() {
     );
   }, []);
 
-  const toggleSectionCompletion = useCallback((sectionId: string) => {
+  const toggleSectionCompletion = useCallback((sectionId: string, completionType: 'normal' | 'empty' = 'normal') => {
     setSections(prevSections =>
       prevSections.map(section =>
         section.id === sectionId
-          ? { ...section, isCompleted: !section.isCompleted }
+          ? { 
+              ...section, 
+              isCompleted: !section.isCompleted,
+              completionType: section.isCompleted ? undefined : completionType
+            }
           : section
       )
     );

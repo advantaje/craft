@@ -16,7 +16,7 @@ import {
   Chip,
   Paper
 } from '@material-ui/core';
-import { Refresh as RefreshIcon, Check as CheckIcon, Warning as WarningIcon } from '@material-ui/icons';
+import { Refresh as RefreshIcon, Check as CheckIcon, Warning as WarningIcon, Block as BlockIcon } from '@material-ui/icons';
 import { DocumentSection, SectionData, TableData } from '../types/document.types';
 import { TableConfiguration } from '../config/tableConfigurations';
 import { 
@@ -32,7 +32,7 @@ interface TableWorkflowProps {
   section: DocumentSection;
   tableConfig: TableConfiguration;
   onSectionUpdate: (sectionId: string, field: keyof SectionData, value: string) => void;
-  onToggleCompletion: (sectionId: string) => void;
+  onToggleCompletion: (sectionId: string, completionType?: 'normal' | 'empty') => void;
   onTemplateTagUpdate: (sectionId: string, templateTag: string) => void;
 }
 
@@ -205,7 +205,20 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
           />
         </Box>
         <Box>
-          {!hasTableData() && (
+          {section.completionType === 'empty' ? (
+            <Chip
+              icon={<BlockIcon style={{ fontSize: '18px' }} />}
+              label="Section Excluded"
+              variant="outlined"
+              style={{ 
+                marginRight: '1rem',
+                backgroundColor: '#f3e5f5',
+                borderColor: '#9c27b0',
+                color: '#7b1fa2',
+                paddingLeft: '8px'
+              }}
+            />
+          ) : !hasTableData() && (
             <Chip
               icon={<WarningIcon style={{ fontSize: '18px' }} />}
               label="Table data required to complete"
@@ -223,7 +236,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
           <Button
             variant={section.isCompleted ? "outlined" : "contained"}
             color={section.isCompleted ? "secondary" : "primary"}
-            onClick={() => onToggleCompletion(section.id)}
+            onClick={() => onToggleCompletion(section.id, 'normal')}
             disabled={!hasTableData()}
             startIcon={section.isCompleted ? undefined : <CheckIcon />}
             size="large"

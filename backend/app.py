@@ -5,9 +5,15 @@ import json
 import sys
 import os
 import io
+from os import getenv
 
 # Add the backend directory to Python path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# Environment configuration
+HOST = getenv('HOST', '0.0.0.0')
+PORT = int(getenv('PORT', 8888))
+FRONTEND_URL = getenv('FRONTEND_URL', 'http://localhost:3000')
 
 from services.generation_service import GenerationService
 from services.document_generation_service import DocumentGenerationService
@@ -18,7 +24,7 @@ uploaded_templates = {}
 
 class BaseHandler(tornado.web.RequestHandler):
     def set_default_headers(self):
-        self.set_header("Access-Control-Allow-Origin", "http://localhost:3000")
+        self.set_header("Access-Control-Allow-Origin", FRONTEND_URL)
         self.set_header("Access-Control-Allow-Headers", "Content-Type")
         self.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 
@@ -39,78 +45,49 @@ class HelloHandler(BaseHandler):
         self.write(json.dumps(response))
 
 
-class DocumentLookupHandler(BaseHandler):
+class ReviewLookupHandler(BaseHandler):
     def post(self):
         try:
             body = json.loads(self.request.body)
-            document_id = body.get('id', '')
+            review_id = body.get('id', '')
             
-            if not document_id.strip():
+            if not review_id.strip():
                 self.set_status(400)
-                self.write(json.dumps({"error": "Document ID is required"}))
+                self.write(json.dumps({"error": "Review ID is required"}))
                 return
             
             # Simulate database lookup with arbitrary data
-            document_data = self.get_document_data(document_id)
+            review_data = self.get_review_data(review_id)
             
-            response = {"result": document_data}
+            response = {"result": review_data}
             self.set_header("Content-Type", "application/json")
             self.write(json.dumps(response))
         except Exception as e:
             self.set_status(500)
             self.write(json.dumps({"error": str(e)}))
     
-    def get_document_data(self, document_id):
+    def get_review_data(self, review_id):
         # Simulate database lookup - replace with actual database query
         import random
         
-        # Generate different data based on ID for variety
+        # Generate different review data based on ID for variety
         data_variations = [
             {
-                "Document Owner": "Sarah Johnson",
-                "Document Lead": "Michael Chen",
-                "Project Name": "Q4 Strategy Review",
-                "Department": "Strategy & Planning",
-                "Created Date": "2024-01-15",
-                "Last Modified": "2024-02-03",
-                "Status": "In Progress",
-                "Priority": "High",
-                "Reviewers": "Alice Smith, Bob Wilson",
-                "Document Type": "Strategic Plan"
+                "Review ID": "REV-2024-001",
+                "Model Name": "GPT-4"
             },
             {
-                "Document Owner": "Robert Davis",
-                "Document Lead": "Emma Thompson",
-                "Project Name": "Product Roadmap 2024",
-                "Department": "Product Management",
-                "Created Date": "2024-01-08",
-                "Last Modified": "2024-01-28",
-                "Status": "Under Review",
-                "Priority": "Medium",
-                "Reviewers": "David Kim, Lisa Brown",
-                "Document Type": "Roadmap",
-                "Target Audience": "Executive Team",
-                "Deadline": "2024-03-15"
+                "Review ID": "REV-2024-002",
+                "Model Name": "Claude-3-Sonnet"
             },
             {
-                "Document Owner": "Jennifer Lee",
-                "Document Lead": "Alex Rodriguez",
-                "Project Name": "Market Analysis Report",
-                "Department": "Business Intelligence",
-                "Created Date": "2024-01-22",
-                "Last Modified": "2024-02-01",
-                "Status": "Draft",
-                "Priority": "Low",
-                "Reviewers": "Mark Johnson",
-                "Document Type": "Analysis Report",
-                "Data Sources": "Internal Analytics, Market Research",
-                "Confidentiality": "Internal Only",
-                "Version": "2.1"
+                "Review ID": "REV-2024-003",
+                "Model Name": "Gemini-Pro"
             }
         ]
         
-        # Use document_id to determine which variation to return
-        variation_index = hash(document_id) % len(data_variations)
+        # Use review_id to determine which variation to return
+        variation_index = hash(review_id) % len(data_variations)
         return data_variations[variation_index]
 
 
@@ -295,7 +272,7 @@ class GenerateDocumentStreamHandler(BaseHandler):
             self.set_header("Content-Type", "text/event-stream")
             self.set_header("Cache-Control", "no-cache")
             self.set_header("Connection", "keep-alive")
-            self.set_header("Access-Control-Allow-Origin", "http://localhost:3000")
+            self.set_header("Access-Control-Allow-Origin", FRONTEND_URL)
             self.set_header("Access-Control-Allow-Headers", "Content-Type")
             
             # Progress callback function
@@ -393,7 +370,7 @@ class UploadTemplateHandler(BaseHandler):
 def make_app():
     return tornado.web.Application([
         (r"/api/hello", HelloHandler),
-        (r"/api/document-lookup", DocumentLookupHandler),
+        (r"/api/review-lookup", ReviewLookupHandler),
         (r"/api/generate-outline", GenerateOutlineHandler),
         (r"/api/generate-draft-from-outline", GenerateDraftFromOutlineHandler),
         (r"/api/generate-draft-from-review", GenerateDraftFromReviewHandler),
@@ -406,7 +383,8 @@ def make_app():
 
 if __name__ == "__main__":
     app = make_app()
-    app.listen(8888)
-    print("Server running on http://localhost:8888")
+    app.listen(PORT, HOST)
+    print(f"Server running on http://{HOST}:{PORT}")
+    print(f"CORS enabled for frontend: {FRONTEND_URL}")
     print("Server now supports section-specific prompts!")
     tornado.ioloop.IOLoop.current().start()

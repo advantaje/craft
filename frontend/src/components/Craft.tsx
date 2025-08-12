@@ -14,9 +14,11 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  IconButton
+  IconButton,
+  Menu,
+  MenuItem
 } from '@material-ui/core';
-import { Add as AddIcon, Check as CheckIcon, GetApp as DownloadIcon, Close as CloseIcon } from '@material-ui/icons';
+import { Add as AddIcon, Check as CheckIcon, GetApp as DownloadIcon, Close as CloseIcon, Block as BlockIcon } from '@material-ui/icons';
 import { Link } from 'react-router-dom';
 import { useDocumentSections } from '../hooks/useDocumentSections';
 import { DocumentInfo, SectionData, TemplateInfo } from '../types/document.types';
@@ -52,6 +54,7 @@ const Craft: React.FC = () => {
     name: 'template-tagged',
     type: 'default'
   });
+  const [contextMenu, setContextMenu] = useState<{ mouseX: number; mouseY: number; sectionId: string } | null>(null);
   
   const {
     sections,
@@ -125,6 +128,29 @@ const Craft: React.FC = () => {
     setTemplateInfo(newTemplateInfo);
   };
 
+  const handleTabContextMenu = (event: React.MouseEvent, sectionId: string) => {
+    event.preventDefault();
+    const section = sections.find(s => s.id === sectionId);
+    if (section && !section.isCompleted) {
+      setContextMenu({
+        mouseX: event.clientX - 2,
+        mouseY: event.clientY - 4,
+        sectionId
+      });
+    }
+  };
+
+  const handleCloseContextMenu = () => {
+    setContextMenu(null);
+  };
+
+  const handleExcludeSection = () => {
+    if (contextMenu) {
+      toggleSectionCompletion(contextMenu.sectionId, 'empty');
+      handleCloseContextMenu();
+    }
+  };
+
   return (
     <>
       <AppBar position="static">
@@ -174,7 +200,8 @@ const Craft: React.FC = () => {
             />
             {sections.map((section) => (
               <Tab 
-                key={section.id} 
+                key={section.id}
+                onContextMenu={(e) => handleTabContextMenu(e, section.id)}
                 label={
                   <Box 
                     display="flex" 
@@ -184,14 +211,28 @@ const Craft: React.FC = () => {
                     width="100%" 
                     position="relative"
                     paddingRight={canRemoveSection(section.id) ? "24px" : "0"}
+                    style={{
+                      padding: '4px 8px'
+                    }}
                   >
                     <Box display="flex" alignItems="center" justifyContent="center">
-                      <span style={{ marginRight: section.isCompleted ? '0.5rem' : '0' }}>{section.name}</span>
+                      <span style={{ 
+                        marginRight: section.isCompleted ? '0.5rem' : '0',
+                        color: section.completionType === 'empty' ? '#757575' : 'inherit'
+                      }}>
+                        {section.name}
+                      </span>
                       {section.isCompleted && (
-                        <CheckIcon 
-                          color="primary" 
-                          style={{ fontSize: '18px' }} 
-                        />
+                        section.completionType === 'empty' ? (
+                          <BlockIcon 
+                            style={{ fontSize: '18px', color: '#757575' }} 
+                          />
+                        ) : (
+                          <CheckIcon 
+                            color="primary" 
+                            style={{ fontSize: '18px' }} 
+                          />
+                        )
                       )}
                     </Box>
                     {canRemoveSection(section.id) && (
@@ -219,7 +260,8 @@ const Craft: React.FC = () => {
                 }
                 style={{ 
                   marginRight: '8px',
-                  minWidth: '120px'
+                  minWidth: '120px',
+                  backgroundColor: section.completionType === 'empty' ? '#eeeeee' : 'transparent'
                 }}
               />
             ))}
@@ -289,8 +331,10 @@ const Craft: React.FC = () => {
           <Typography variant="body2" color="textSecondary" style={{ fontStyle: 'italic' }}>
             💡 Need help? This tool uses AI to assist with document creation. Generate outlines, create drafts, and iteratively improve content with AI reviews. 
             <Button 
-              component={Link} 
-              to="/about" 
+              component="a"
+              href="/#/about"
+              target="_blank"
+              rel="noopener noreferrer"
               size="small" 
               style={{ 
                 marginLeft: '0.5rem',
@@ -345,6 +389,21 @@ const Craft: React.FC = () => {
         sections={sections}
         templateInfo={templateInfo}
       />
+      
+      <Menu
+        open={contextMenu !== null}
+        onClose={handleCloseContextMenu}
+        anchorReference="anchorPosition"
+        anchorPosition={
+          contextMenu !== null
+            ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
+            : undefined
+        }
+      >
+        <MenuItem onClick={handleExcludeSection}>
+          🚫 Exclude Section
+        </MenuItem>
+      </Menu>
     </>
   );
 };

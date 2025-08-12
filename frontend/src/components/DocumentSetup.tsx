@@ -19,7 +19,7 @@ import {
   Chip
 } from '@material-ui/core';
 import { Check as CheckIcon, CloudUpload as UploadIcon, Description as TemplateIcon } from '@material-ui/icons';
-import { lookupDocument } from '../services/api.service';
+import { lookupReview, uploadTemplate } from '../services/api.service';
 import { DocumentInfo, TemplateInfo } from '../types/document.types';
 
 interface DocumentSetupProps {
@@ -38,7 +38,7 @@ const DocumentInfoDisplay: React.FC<{ data: DocumentInfo }> = ({ data }) => {
         title={
           <Box display="flex" alignItems="center">
             <CheckIcon color="primary" style={{ marginRight: '0.5rem' }} />
-            <Typography variant="h5">Document Information</Typography>
+            <Typography variant="h5">Review Information</Typography>
           </Box>
         }
         subheader="Retrieved from database"
@@ -77,18 +77,18 @@ const DocumentSetup: React.FC<DocumentSetupProps> = ({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  const performDocumentLookup = async () => {
+  const performReviewLookup = async () => {
     if (!documentId.trim()) return;
 
     setIsLoading(true);
     setError(null);
     
     try {
-      const result = await lookupDocument({ id: documentId });
+      const result = await lookupReview({ id: documentId });
       onDocumentFound?.(result);
     } catch (error) {
-      console.error('Error looking up document:', error);
-      setError('Failed to lookup document. Please try again.');
+      console.error('Error looking up review:', error);
+      setError('Failed to lookup review. Please try again.');
       onDocumentFound?.(null);
     } finally {
       setIsLoading(false);
@@ -125,19 +125,7 @@ const DocumentSetup: React.FC<DocumentSetupProps> = ({
     setUploadError(null);
 
     try {
-      const formData = new FormData();
-      formData.append('template', file);
-
-      const response = await fetch('http://localhost:8888/api/upload-template', {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to upload template');
-      }
-
-      const result = await response.json();
+      const result = await uploadTemplate(file);
       
       onTemplateChange({
         name: file.name,
@@ -156,20 +144,20 @@ const DocumentSetup: React.FC<DocumentSetupProps> = ({
   return (
     <>
       <Typography variant="h4" gutterBottom align="center" style={{ marginBottom: '2rem' }}>
-        Document Setup
+        Review Setup
       </Typography>
       
       <Card>
         <CardHeader
-          title="Enter Document ID"
-          subheader="Retrieve document information from the database"
+          title="Enter Review ID"
+          subheader="Retrieve review information from the database"
         />
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
             <TextField
               fullWidth
               variant="outlined"
-              label="Document ID"
+              label="Review ID"
               value={documentId}
               onChange={(e) => {
                 setDocumentId(e.target.value);
@@ -179,8 +167,8 @@ const DocumentSetup: React.FC<DocumentSetupProps> = ({
                   setError(null);
                 }
               }}
-              placeholder="Enter document ID to lookup information..."
-              onKeyPress={(e) => e.key === 'Enter' && performDocumentLookup()}
+              placeholder="Enter review ID to lookup information..."
+              onKeyPress={(e) => e.key === 'Enter' && performReviewLookup()}
               style={{ marginRight: '1rem' }}
               error={!!error}
               helperText={error}
@@ -188,7 +176,7 @@ const DocumentSetup: React.FC<DocumentSetupProps> = ({
             <Button
               variant="contained"
               color="primary"
-              onClick={performDocumentLookup}
+              onClick={performReviewLookup}
               disabled={!documentId.trim() || isLoading}
               style={{ height: '56px', minWidth: '150px' }}
             >
@@ -198,7 +186,7 @@ const DocumentSetup: React.FC<DocumentSetupProps> = ({
                   Looking up...
                 </>
               ) : (
-                'Lookup Document'
+                'Lookup Review'
               )}
             </Button>
           </Box>

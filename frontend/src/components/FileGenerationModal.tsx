@@ -14,6 +14,9 @@ import {
 import { Check as CheckIcon, GetApp as DownloadIcon, Error as ErrorIcon } from '@material-ui/icons';
 import { DocumentInfo, DocumentSection, DocumentGenerationProgressEvent, TemplateInfo } from '../types/document.types';
 
+// Use environment variable for API base URL
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8888/api';
+
 interface FileGenerationModalProps {
   open: boolean;
   onClose: () => void;
@@ -53,10 +56,27 @@ const FileGenerationModal: React.FC<FileGenerationModalProps> = ({
     try {
       resetState();
       
-      // Get only completed sections
-      const completedSections = sections.filter(section => section.isCompleted);
+      // Get only completed sections and prepare data for backend
+      const completedSections = sections
+        .filter(section => section.isCompleted)
+        .map(section => {
+          // For excluded sections, send empty data to backend while preserving frontend content
+          if (section.completionType === 'empty') {
+            return {
+              ...section,
+              data: {
+                notes: '',
+                outline: '',
+                draft: section.type === 'model_limitations' || section.type === 'model_risk_issues' ? '{"rows":[]}' : '',
+                reviewNotes: ''
+              }
+            };
+          }
+          // For normal sections, send original data
+          return section;
+        });
       
-      const response = await fetch('http://localhost:8888/api/generate-document-stream', {
+      const response = await fetch(`${API_BASE_URL}/generate-document-stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

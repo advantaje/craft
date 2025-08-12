@@ -12,6 +12,7 @@ export interface DocumentSection {
   templateTag?: string;
   data: SectionData;
   isCompleted: boolean;
+  completionType?: 'normal' | 'empty';
 }
 
 export interface TableColumn {
@@ -42,7 +43,7 @@ export interface HelloResponse {
   timestamp: string;
 }
 
-export interface DocumentLookupRequest {
+export interface ReviewLookupRequest {
   id: string;
 }
 
