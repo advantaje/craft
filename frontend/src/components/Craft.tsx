@@ -132,9 +132,18 @@ const Craft: React.FC = () => {
           <Typography variant="h6" style={{ flexGrow: 1 }}>
             CRAFT - Document Planning & Drafting
           </Typography>
-          <Button color="inherit" component={Link} to="/about">
-            About
-          </Button>
+          {documentData && (
+            <Box display="flex" alignItems="center" style={{ color: 'white' }}>
+              <Typography variant="body2" style={{ marginRight: '1rem' }}>
+                <strong>Review ID:</strong> {documentId}
+              </Typography>
+              {documentData.name && (
+                <Typography variant="body2">
+                  <strong>Name:</strong> {documentData.name}
+                </Typography>
+              )}
+            </Box>
+          )}
         </Toolbar>
       </AppBar>
 
@@ -274,6 +283,27 @@ const Craft: React.FC = () => {
             </TabPanel>
           ))}
         </Paper>
+
+        {/* Global Tip */}
+        <Box mt={4} mb={2} textAlign="center">
+          <Typography variant="body2" color="textSecondary" style={{ fontStyle: 'italic' }}>
+            💡 Need help? This tool uses AI to assist with document creation. Generate outlines, create drafts, and iteratively improve content with AI reviews. 
+            <Button 
+              component={Link} 
+              to="/about" 
+              size="small" 
+              style={{ 
+                marginLeft: '0.5rem',
+                textTransform: 'none',
+                fontSize: 'inherit',
+                fontStyle: 'italic',
+                textDecoration: 'underline'
+              }}
+            >
+              Learn more
+            </Button>
+          </Typography>
+        </Box>
       </Container>
 
       <Dialog open={addTabDialog} onClose={() => { setAddTabDialog(false); setNewTabName(''); setNewTabTemplateTag(''); }}>

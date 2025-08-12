@@ -350,12 +350,6 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
                 </Grid>
               </Grid>
               
-              <Box mt={3}>
-                <Divider />
-                <Typography variant="body2" color="textSecondary" style={{ marginTop: '1rem', fontStyle: 'italic' }}>
-                  💡 Tip: This is a cyclical process. Generate reviews, apply feedback, and repeat to continuously improve your draft.
-                </Typography>
-              </Box>
             </CardContent>
           </Card>
         </>

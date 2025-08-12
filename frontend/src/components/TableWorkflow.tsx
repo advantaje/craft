@@ -407,12 +407,6 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
                 </Grid>
               </Grid>
               
-              <Box mt={3}>
-                <Divider />
-                <Typography variant="body2" color="textSecondary" style={{ marginTop: '1rem', fontStyle: 'italic' }}>
-                  💡 Tip: You can directly edit cells in the table above, add/delete rows, and use the review cycle to refine your data.
-                </Typography>
-              </Box>
             </CardContent>
           </Card>
         </>
