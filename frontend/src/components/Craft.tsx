@@ -200,8 +200,7 @@ const Craft: React.FC = () => {
                   <span>Home</span>
                   {isDocumentSetupComplete() && (
                     <CheckIcon 
-                      color="primary" 
-                      style={{ marginLeft: '0.5rem', fontSize: '18px' }} 
+                      style={{ marginLeft: '0.5rem', fontSize: '18px', color: '#4caf50' }} 
                     />
                   )}
                 </Box>
@@ -238,8 +237,7 @@ const Craft: React.FC = () => {
                           />
                         ) : (
                           <CheckIcon 
-                            color="primary" 
-                            style={{ fontSize: '18px' }} 
+                            style={{ fontSize: '18px', color: '#4caf50' }} 
                           />
                         )
                       )}
