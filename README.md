@@ -1,159 +1,362 @@
-# Craft - Document Planning & Drafting
+# CRAFT - Document Planning & Drafting System
 
-A full-stack document planning and drafting application with React TypeScript frontend and Python Tornado backend. Craft helps users create structured documents through a guided 3-step workflow with AI-powered processing and smart completion tracking.
+## Technical Architecture Overview
 
-## ✨ Key Features
+CRAFT is a sophisticated document generation system that combines React frontend with Python backend to create AI-powered document drafting workflows. This README explains the internal code structure and architectural decisions.
 
-### 🏠 **Document Lookup (Home Tab)**
-- **Starting Point**: Home tab as the first tab with document ID lookup
-- **Database Integration**: Retrieve document metadata using document IDs
-- **Flexible Data Display**: Handles arbitrary field/value pairs from backend
-- **Visual Feedback**: Checkmark appears in Home tab when lookup is successful
-- **Professional Layout**: Responsive grid display for document information
+## System Architecture
 
-### 📝 **Smart Workflow**
-- **3-Step Process**: Notes → Draft Outline → Draft & Review Cycle
-- **All-in-One View**: See all steps on one screen with card-based layout
-- **Smart Progress Tracking**: Visual stepper shows active step based on focused textbox
-- **Intelligent Checkmarks**: Steps marked complete only when next step has content
+```
+┌─────────────────┐    HTTP/REST    ┌──────────────────┐
+│   React Frontend │ ──────────────→ │  Python Backend  │
+│   (TypeScript)   │ ←────────────── │   (Tornado)      │
+└─────────────────┘                 └──────────────────┘
+         │                                    │
+         │                                    │
+    ┌────▼────┐                          ┌───▼────┐
+    │Material │                          │OpenAI  │
+    │   UI    │                          │  API   │
+    └─────────┘                          └────────┘
+                                              │
+                                         ┌────▼─────┐
+                                         │ DocX     │
+                                         │Generation│
+                                         └──────────┘
+```
 
-### 🎯 **Section Management**
-- **Pre-defined Sections**: Introduction, Background, Usage, Conclusion
-- **Custom Sections**: Add unlimited custom sections via "+" tab
-- **Completion Tracking**: Mark sections as complete with visual checkmarks in tabs
-- **Lock-out Protection**: Completed sections become read-only until reopened
+## Core Data Flow
 
-### 🤖 **AI-Powered Processing**
-- **Generate Outlines**: Create structured outlines from your notes
-- **Draft Generation**: Generate initial drafts from outlines and notes
-- **Review Suggestions**: AI-powered feedback and improvement suggestions  
-- **Cyclical Revision**: Apply review feedback to continuously improve drafts
+### 1. Document Lifecycle
+```
+User Input → Section Notes → AI Outline → AI Draft → AI Review → Document Generation
+     │             │            │          │         │              │
+     │             │            │          │         │              │
+  Setup Phase   Content     Structure   Content   Refinement    Export
+             Generation   Generation  Generation  Generation   Generation
+```
 
-### 🎨 **Modern UI/UX**
-- **Material-UI v4**: Professional, accessible interface
-- **Focus-Based Highlighting**: Steps highlight only when text fields are focused
-- **Error Handling**: Clear warnings for incomplete sections
-- **Beautiful Document View**: Formatted final document display for completed sections
-- **Responsive Design**: Works on desktop and tablet devices
+### 2. Section State Management
+Each document section maintains state through the workflow:
+```typescript
+interface DocumentSection {
+  id: string;           // Unique identifier
+  name: string;         // Display name
+  type: string;         // Determines AI prompts
+  templateTag?: string; // Word template placeholder
+  data: {
+    notes: string;      // User input
+    outline: string;    // AI-generated structure
+    draft: string;      // AI-generated content
+    reviewNotes: string;// AI-generated feedback
+  };
+  isCompleted: boolean;     // Workflow completion status
+  completionType?: 'normal' | 'empty'; // Completion method
+}
+```
 
-### 🔧 **Technical Features**
-- **React TypeScript**: Type-safe frontend development
-- **Python Tornado**: High-performance async backend
-- **Real-time Processing**: Instant API responses with loading states
-- **State Management**: Persistent section data during session
+## Frontend Architecture
 
-## Setup and Running
+### Component Hierarchy
+```
+App
+├── HashRouter
+    └── Craft (Main Container)
+        ├── DocumentSetup (Review lookup + Template selection)
+        ├── SectionWorkflow[] (Text-based sections)
+        │   ├── Notes Input
+        │   ├── Outline Generation
+        │   ├── Draft Generation
+        │   └── Review Cycle
+        ├── TableWorkflow[] (Structured data sections)
+        │   ├── Table Editor
+        │   ├── JSON Data Management
+        │   └── AI Table Generation
+        └── FileGenerationModal (Document export)
+```
 
-### Backend (Tornado)
+### Key Design Patterns
 
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
+#### 1. Custom Hooks Pattern
+The `useDocumentSections` hook encapsulates all section state logic:
+```typescript
+export function useDocumentSections() {
+  const [sections, setSections] = useState<DocumentSection[]>(DEFAULT_SECTIONS);
+  
+  // State management methods
+  const updateSectionData = useCallback(/* ... */);
+  const toggleSectionCompletion = useCallback(/* ... */);
+  const addSection = useCallback(/* ... */);
+  
+  return {
+    sections,
+    updateSectionData,
+    toggleSectionCompletion,
+    // ... other methods
+  };
+}
+```
 
-2. Install Python dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+#### 2. Workflow State Machine
+Each section follows a defined state progression:
+```
+Empty → Notes Added → Outline Generated → Draft Generated → Review Applied → Complete
+  │         │              │                 │                 │             │
+  │         │              │                 │                 │             │
+  ▼         ▼              ▼                 ▼                 ▼             ▼
+Setup   Content         Structure        Content           Refinement    Ready
+Phase   Collection      Planning         Creation          Cycle         Export
+```
 
-3. Start the Tornado server:
-   ```bash
-   python app.py
-   ```
+#### 3. Type-Safe API Layer
+All API interactions are strongly typed:
+```typescript
+// Request/Response interfaces ensure type safety
+export async function generateOutline(request: GenerateOutlineRequest): Promise<string> {
+  const response = await axiosInstance.post<ApiResponse<string>>('/generate-outline', request);
+  return response.data.result;
+}
+```
 
-   The backend will run on http://localhost:8888
+### Section Type System
 
-### Frontend (React)
+#### Standard Sections (Text-based)
+- **Background**: Historical context and previous work
+- **Product**: Conclusions and recommendations  
+- **Usage**: Implementation instructions
+- **Custom**: User-defined sections
 
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
+#### Structured Sections (Table-based)
+- **Model Limitations**: Technical constraints and scope
+- **Model Risk Issues**: Risk assessment and categorization
 
-2. Install npm dependencies:
-   ```bash
-   npm install
-   ```
+Each type has specialized AI prompts and rendering logic.
 
-3. Start the React development server:
-   ```bash
-   npm start
-   ```
+## Backend Architecture
 
-   The frontend will run on http://localhost:3000
+### Service Layer Design
 
-## 🚀 Usage Guide
+#### 1. Generation Service (`generation_service.py`)
+Handles AI content generation with section-aware processing:
+```python
+class GenerationService:
+    def __init__(self):
+        self.prompts = SectionPrompts()    # Section-specific prompts
+        self.client = create_azure_openai_client()
+        self.model = 'gpt-4.1-mini-2025-04-14'
+    
+    def generate_outline_from_notes(self, notes, section_name, section_type):
+        prompt = self.prompts.get_outline_prompt(section_type, section_name, notes)
+        # AI generation logic
+        
+    def generate_draft_from_outline(self, notes, outline, section_name, section_type):
+        # Handles both text and JSON generation based on section_type
+        if section_type in ['model_limitations', 'model_risk_issues']:
+            # JSON mode for structured data
+        else:
+            # Standard text generation
+```
 
-### Getting Started
-1. Open your browser to **http://localhost:3000**
-2. **Start with the Home tab** to look up existing document information (optional)
-3. Choose a document section tab (Introduction, Background, Usage, Conclusion) or add a custom section with the **"+"** tab
+#### 2. Document Generation Service (`document_generation_service.py`)
+Transforms section data into Word documents:
+```python
+class DocumentGenerationService:
+    def generate_docx_document(self, document_id, document_data, sections, template_info):
+        # Load template (default or custom)
+        # Process each section
+        # Map content to template tags
+        # Generate final document
+```
 
-### Home Tab - Document Lookup
-**Purpose**: Retrieve existing document metadata before starting the workflow
-- Enter a **Document ID** in the input field
-- Click **"Lookup Document"** or press Enter to retrieve information
-- View document details including owner, lead, project info, dates, status, and more
-- **Success Indicator**: Green checkmark appears in Home tab when data is found
-- **Flexible Display**: Automatically handles any number of document fields
+### AI Prompt Architecture
 
-### 3-Step Workflow
-**Step 1: Notes**
-- Write your initial thoughts, ideas, and research
-- Click **"Generate Outline →"** to create a structured outline from your notes
+#### Prompt Template System
+The `SectionPrompts` class contains specialized templates for each section type and workflow stage:
+```python
+class SectionPrompts:
+    OUTLINE_PROMPTS = {
+        "introduction": "...",     # Section-specific outline guidance
+        "background": "...",       # Historical context prompts
+        "model_limitations": "...", # Table structure prompts
+        # ... other section types
+    }
+    
+    DRAFT_PROMPTS = {
+        # Content generation templates
+    }
+    
+    REVIEW_PROMPTS = {
+        # Improvement feedback templates
+    }
+    
+    REVISION_PROMPTS = {
+        # Content refinement templates
+    }
+```
 
-**Step 2: Draft Outline** 
-- Review and edit the AI-generated outline or write your own
-- Click **"Generate Draft →"** to create an initial draft from your outline
+#### AI Generation Modes
+1. **Text Mode**: Standard content generation for narrative sections
+2. **JSON Mode**: Structured data generation for table sections
+3. **Review Mode**: Analysis and feedback generation
+4. **Revision Mode**: Content improvement based on feedback
 
-**Step 3: Draft & Review Cycle** (Cyclical Process)
-- **Left Side**: Your draft content appears here
-- **Right Side**: Generate review suggestions or add your own feedback
-- Use **"Generate Review →"** for AI-powered suggestions  
-- Use **"← Apply & Update Draft"** to revise your draft based on feedback
-- **Repeat the cycle** to continuously improve your content
+### Document Processing Pipeline
 
-### Section Completion
-- Click **"Mark Complete"** when satisfied with a section (requires draft content)
-- Completed sections show a **✓ checkmark** in the tab
-- View the **beautifully formatted final document** for completed sections  
-- Use **"Reopen Section"** to make further edits if needed
+#### 1. Template System
+Uses custom DocxTemplate implementation with Jinja2:
+```python
+# Template tags map to section content
+context = {
+    'background': cleaned_background_content,
+    'product': cleaned_product_content,
+    'model_limitations': formatted_table_data,
+    # ... other sections
+}
 
-### Visual Feedback
-- **Progress Stepper**: Shows which step you're currently working on (based on focused textbox)
-- **Smart Checkmarks**: Steps show completion only when the next step has content
-- **Warning Indicators**: Clear alerts when draft content is missing
+doc.render(context)  # Jinja2 template rendering
+```
 
-## 🔌 API Endpoints
+#### 2. Content Processing
+- **Text Sections**: Cleaned and formatted for Word
+- **Table Sections**: JSON data converted to formatted tables
+- **Template Tags**: Dynamic mapping based on section configuration
 
-### Document Management
-- **`GET /api/hello`** - Health check endpoint with timestamp
-- **`POST /api/document-lookup`** - Retrieves document metadata by ID
-  - Input: `{ id: string }`
-  - Output: `{ data: { [field: string]: string } }`
-  - Returns arbitrary field/value pairs (owner, lead, dates, status, etc.)
+#### 3. File Generation
+```python
+def generate_docx_document_with_progress(self, document_id, document_data, sections, progress_callback, template_info):
+    # 1. Load template (default or custom)
+    # 2. Process section content
+    # 3. Build context dictionary
+    # 4. Render template with content
+    # 5. Return BytesIO buffer
+```
 
-### AI-Powered Document Generation
-- **`POST /api/generate-outline`** - Creates structured outline from notes
-  - Input: `{ notes: string }`
-  - Output: `{ outline: string }`
-- **`POST /api/generate-draft-from-outline`** - Generates initial draft from outline and notes
-  - Input: `{ notes: string, outline: string }`
-  - Output: `{ draft: string }`
-- **`POST /api/generate-review`** - Provides AI-powered review suggestions
-  - Input: `{ draft: string }`
-  - Output: `{ review: string }`
-- **`POST /api/generate-draft-from-review`** - Applies review feedback to update draft
-  - Input: `{ draft: string, reviewNotes: string }`
-  - Output: `{ draft: string }`
+## Data Models
 
-## 💡 Pro Tips
+### Core Interfaces
+```typescript
+// Section data structure
+interface SectionData {
+  notes: string;        // User input
+  outline: string;      // AI-generated structure  
+  draft: string;        // AI-generated content
+  reviewNotes: string;  // AI-generated feedback
+}
 
-- **Start with Home**: Use the Home tab to lookup existing document metadata before beginning work
-- **Flexible Data**: Document lookup handles any number of fields - perfect for various document types
-- **Focus-driven UI**: The stepper highlights the step corresponding to your currently focused textbox
-- **Cyclical Process**: Step 3 is designed for iteration—generate reviews and apply feedback repeatedly  
-- **Section Independence**: Each section maintains its own progress and can be worked on separately
-- **Completion Benefits**: Completed sections display as professionally formatted documents
-- **Custom Sections**: Add sections for any document type (Executive Summary, Methodology, etc.)
-- **Visual Feedback**: Look for checkmarks in tabs to track completion status across the entire workflow
+// Document metadata
+interface DocumentInfo {
+  [key: string]: string; // Flexible document properties
+}
+
+// Template configuration
+interface TemplateInfo {
+  name: string;
+  type: 'default' | 'custom';
+  isUploaded?: boolean;
+}
+
+// Table configuration for structured sections
+interface TableConfiguration {
+  columns: TableColumn[];
+  sectionType: string;
+}
+```
+
+### API Request/Response Types
+All API endpoints use strongly-typed interfaces:
+- `GenerateOutlineRequest`
+- `GenerateDraftFromOutlineRequest` 
+- `GenerateReviewRequest`
+- `GenerateDocumentRequest`
+
+## Key Technical Decisions
+
+### 1. Section-Based Architecture
+- **Modular Design**: Each section is independent and reusable
+- **Type Safety**: Strong typing throughout the stack
+- **State Isolation**: Section state is managed independently
+
+### 2. AI Integration Strategy
+- **Prompt Engineering**: Section-specific prompts for better results
+- **Mode Selection**: Different generation modes for text vs. structured data
+- **Error Handling**: Graceful degradation for AI service issues
+
+### 3. Document Generation Pipeline
+- **Template Abstraction**: Flexible template system supporting custom uploads
+- **Content Mapping**: Dynamic mapping of section content to template placeholders
+- **Format Support**: Extensible to support multiple output formats
+
+### 4. State Management
+- **Custom Hooks**: Encapsulated state logic with React hooks
+- **Immutable Updates**: Functional state updates for predictability
+- **Completion Tracking**: Sophisticated completion state with exclusion support
+
+## File Organization
+
+```
+craft/
+├── frontend/
+│   ├── src/
+│   │   ├── components/           # React components
+│   │   │   ├── Craft.tsx        # Main container
+│   │   │   ├── DocumentSetup.tsx # Setup workflow
+│   │   │   ├── SectionWorkflow.tsx # Text sections
+│   │   │   ├── TableWorkflow.tsx # Table sections
+│   │   │   └── ...
+│   │   ├── hooks/               # Custom React hooks
+│   │   │   └── useDocumentSections.ts
+│   │   ├── services/            # API layer
+│   │   │   └── api.service.ts
+│   │   ├── types/               # TypeScript interfaces
+│   │   │   └── document.types.ts
+│   │   └── config/              # Configuration
+│   │       └── tableConfigurations.ts
+│   └── package.json
+├── backend/
+│   ├── app.py                   # Tornado web server
+│   ├── services/                # Business logic
+│   │   ├── generation_service.py # AI generation
+│   │   ├── document_generation_service.py # Document creation
+│   │   └── openai_tools.py      # AI client
+│   ├── prompts/                 # AI prompt templates
+│   │   └── section_prompts.py
+│   ├── template.py              # DocX template engine
+│   └── template-tagged.docx     # Default Word template
+└── README.md                    # This file
+```
+
+## Development Workflow
+
+### 1. Adding New Section Types
+1. Define section type in `useDocumentSections.ts`
+2. Add prompts in `section_prompts.py`
+3. Create component logic (text or table-based)
+4. Update generation service handling
+5. Add template tags to Word template
+
+### 2. Extending AI Capabilities
+1. Add prompt templates in `SectionPrompts`
+2. Update generation service methods
+3. Handle new data formats in document generation
+4. Add API endpoints if needed
+
+### 3. Document Format Support
+1. Extend document generation service
+2. Add format-specific processing logic
+3. Update template handling
+4. Add new API endpoints for format selection
+
+## Performance Considerations
+
+- **Lazy Loading**: Components load on-demand
+- **State Optimization**: useCallback for expensive operations
+- **API Batching**: Parallel API calls where possible
+- **Memory Management**: Template caching with cleanup
+
+## Security Features
+
+- **Input Validation**: Comprehensive validation on both client and server
+- **Template Security**: Safe template processing with validation
+- **API Security**: CORS configuration and error handling
+- **File Upload**: Restricted file types and validation
+
+This architecture provides a solid foundation for AI-powered document generation while maintaining code quality, type safety, and extensibility.

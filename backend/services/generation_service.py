@@ -2,9 +2,7 @@
 Document generation service with section-aware processing
 """
 
-import os
-from openai import OpenAI
-from services.openai_tools import OPENAI_API_KEY
+from services.openai_tools import create_azure_openai_client
 from prompts.section_prompts import SectionPrompts
 
 
@@ -13,12 +11,8 @@ class GenerationService:
     
     def __init__(self):
         self.prompts = SectionPrompts()
-        # Initialize OpenAI client
-        # Set your API key via environment variable: OPENAI_API_KEY
-        self.client = OpenAI(
-            api_key=OPENAI_API_KEY
-        )
-        self.model = 'gpt-4.1-mini'
+        self.client = create_azure_openai_client()
+        self.model = 'gpt-4.1-mini-2025-04-14'
     
     def generate_outline_from_notes(self, notes: str, section_name: str, section_type: str) -> str:
         """Generate outline using section-specific prompt"""

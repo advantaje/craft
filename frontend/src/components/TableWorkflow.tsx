@@ -200,7 +200,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
             size="small"
             variant="outlined"
             placeholder="e.g., model_limitations, model_risk_issues"
-            helperText="Template placeholder name for Word document (read-only)"
+            helperText="Template placeholder name for Word document"
             style={{ width: '300px', marginBottom: '8px' }}
           />
         </Box>

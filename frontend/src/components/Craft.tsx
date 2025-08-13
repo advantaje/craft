@@ -19,7 +19,6 @@ import {
   MenuItem
 } from '@material-ui/core';
 import { Add as AddIcon, Check as CheckIcon, GetApp as DownloadIcon, Close as CloseIcon, Block as BlockIcon } from '@material-ui/icons';
-import { Link } from 'react-router-dom';
 import { useDocumentSections } from '../hooks/useDocumentSections';
 import { DocumentInfo, SectionData, TemplateInfo } from '../types/document.types';
 import DocumentSetup from './DocumentSetup';
@@ -170,11 +169,16 @@ const Craft: React.FC = () => {
           {documentData && (
             <Box display="flex" alignItems="center" style={{ color: 'white' }}>
               <Typography variant="body2" style={{ marginRight: '1rem' }}>
-                <strong>Review ID:</strong> {documentId}
+                <strong>Review ID:</strong> {documentData['Review ID'] || documentId}
               </Typography>
-              {documentData.name && (
+              {documentData['Model Name'] && (
+                <Typography variant="body2" style={{ marginRight: '1rem' }}>
+                  <strong>Model:</strong> {documentData['Model Name']}
+                </Typography>
+              )}
+              {documentData['Author'] && (
                 <Typography variant="body2">
-                  <strong>Name:</strong> {documentData.name}
+                  <strong>Author:</strong> {documentData['Author']}
                 </Typography>
               )}
             </Box>

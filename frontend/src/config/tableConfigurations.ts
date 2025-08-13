@@ -9,11 +9,9 @@ export interface TableConfiguration {
 export const MODEL_LIMITATIONS_CONFIG: TableConfiguration = {
   sectionType: 'model_limitations',
   columns: [
-    { id: 'item', label: 'Limitation', type: 'text', required: true, width: '200px' },
-    { id: 'description', label: 'Description', type: 'text', width: '300px' },
-    { id: 'quantity', label: 'Severity', type: 'select', options: ['Low', 'Medium', 'High', 'Critical'], width: '100px' },
-    { id: 'status', label: 'Impact', type: 'select', options: ['Performance', 'Accuracy', 'Reliability', 'Usability'], width: '150px' },
-    { id: 'notes', label: 'Mitigation', type: 'text', width: '200px' }
+    { id: 'title', label: 'Title', type: 'text', required: true, width: '200px' },
+    { id: 'description', label: 'Description', type: 'text', width: '450px' },
+    { id: 'category', label: 'Category', type: 'select', options: ['Data Limitations', 'Technical Limitations', 'Scope Limitations'], width: '180px' }
   ]
 };
 
@@ -21,11 +19,10 @@ export const MODEL_LIMITATIONS_CONFIG: TableConfiguration = {
 export const MODEL_RISK_CONFIG: TableConfiguration = {
   sectionType: 'model_risk_issues',
   columns: [
-    { id: 'item', label: 'Risk Issue', type: 'text', required: true, width: '200px' },
-    { id: 'description', label: 'Description', type: 'text', width: '300px' },
-    { id: 'quantity', label: 'Likelihood', type: 'select', options: ['Very Low', 'Low', 'Medium', 'High', 'Very High'], width: '120px' },
-    { id: 'status', label: 'Risk Level', type: 'select', options: ['Low', 'Medium', 'High', 'Critical'], width: '120px' },
-    { id: 'notes', label: 'Controls', type: 'text', width: '200px' }
+    { id: 'title', label: 'Title', type: 'text', required: true, width: '200px' },
+    { id: 'description', label: 'Description', type: 'text', width: '400px' },
+    { id: 'category', label: 'Category', type: 'select', options: ['Operational Risk', 'Market Risk', 'Credit Risk'], width: '150px' },
+    { id: 'importance', label: 'Importance', type: 'select', options: ['Critical', 'High', 'Low'], width: '120px' }
   ]
 };
 

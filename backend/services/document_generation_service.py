@@ -5,8 +5,9 @@ Document generation service for creating downloadable files
 from datetime import datetime
 import os
 import json
-from docxtpl import DocxTemplate
+from template import DocxTemplate
 import io
+from .review_data_service import get_raw_review_data
 
 
 class DocumentGenerationService:
@@ -63,6 +64,16 @@ class DocumentGenerationService:
             
             # Create context dictionary with template tags
             context = {}
+            
+            # Add review data to context for template use
+            try:
+                review_data = get_raw_review_data(document_id)
+                # Add all review fields to context (using internal field names)
+                for field, value in review_data.items():
+                    context[field] = value
+            except Exception as e:
+                print(f"Warning: Could not fetch review data for document generation: {e}")
+                # Continue without review data if lookup fails
             
             # Process each section
             for section in sections:
@@ -165,20 +176,24 @@ class DocumentGenerationService:
         if section_type == 'model_risk_issues':
             # Model Risk Issues columns: (display_name, json_key, width)
             columns = [
-                ('Risk Issue', 'item', 25),
-                ('Description', 'description', 40),
-                ('Likelihood', 'quantity', 12),
-                ('Risk Level', 'status', 12),
-                ('Controls', 'notes', 30)
+                ('Title', 'title', 25),
+                ('Description', 'description', 50),
+                ('Category', 'category', 20),
+                ('Importance', 'importance', 12)
+            ]
+        elif section_type == 'model_limitations':
+            # Model Limitations columns: (display_name, json_key, width)
+            columns = [
+                ('Title', 'title', 25),
+                ('Description', 'description', 55),
+                ('Category', 'category', 25)
             ]
         else:
-            # Model Limitations columns (default): (display_name, json_key, width)
+            # Default fallback columns
             columns = [
-                ('Limitation', 'item', 25),
-                ('Description', 'description', 40),
-                ('Severity', 'quantity', 10),
-                ('Impact', 'status', 15),
-                ('Mitigation', 'notes', 30)
+                ('Item', 'item', 25),
+                ('Description', 'description', 50),
+                ('Status', 'status', 25)
             ]
         
         lines = []

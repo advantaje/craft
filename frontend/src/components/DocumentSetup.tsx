@@ -15,7 +15,6 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
-  Divider,
   Chip
 } from '@material-ui/core';
 import { Check as CheckIcon, CloudUpload as UploadIcon, Description as TemplateIcon } from '@material-ui/icons';
@@ -45,10 +44,10 @@ const DocumentInfoDisplay: React.FC<{ data: DocumentInfo }> = ({ data }) => {
         style={{ backgroundColor: '#f0f7ff' }}
       />
       <CardContent style={{ paddingBottom: '2rem' }}>
-        <Grid container spacing={3}>
+        <Grid container spacing={2}>
           {Object.entries(data).map(([field, value], index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
-              <Paper elevation={1} style={{ padding: '0.75rem', minHeight: '70px', marginBottom: '0.5rem' }}>
+            <Grid item xs={12} sm={6} md={3} key={index}>
+              <Paper elevation={1} style={{ padding: '0.75rem', minHeight: '80px', marginBottom: '0.5rem' }}>
                 <Typography variant="subtitle2" color="textSecondary" gutterBottom>
                   {field}
                 </Typography>
@@ -125,7 +124,7 @@ const DocumentSetup: React.FC<DocumentSetupProps> = ({
     setUploadError(null);
 
     try {
-      const result = await uploadTemplate(file);
+      await uploadTemplate(file);
       
       onTemplateChange({
         name: file.name,

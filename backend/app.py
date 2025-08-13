@@ -13,10 +13,10 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # Environment configuration
 HOST = getenv('HOST', '0.0.0.0')
 PORT = int(getenv('PORT', 8888))
-FRONTEND_URL = getenv('FRONTEND_URL', 'http://localhost:3000')
 
 from services.generation_service import GenerationService
 from services.document_generation_service import DocumentGenerationService
+from services.review_data_service import get_raw_review_data
 
 # In-memory storage for uploaded templates
 uploaded_templates = {}
@@ -24,7 +24,7 @@ uploaded_templates = {}
 
 class BaseHandler(tornado.web.RequestHandler):
     def set_default_headers(self):
-        self.set_header("Access-Control-Allow-Origin", FRONTEND_URL)
+        self.set_header("Access-Control-Allow-Origin", "*")
         self.set_header("Access-Control-Allow-Headers", "Content-Type")
         self.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 
@@ -46,6 +46,18 @@ class HelloHandler(BaseHandler):
 
 
 class ReviewLookupHandler(BaseHandler):
+    # Field mapping from internal names to display-friendly names for frontend
+    DISPLAY_FIELD_MAPPING = {
+        'review_id': 'Review ID',
+        'model_name': 'Model Name', 
+        'author': 'Author',
+        'department': 'Department',
+        'created_date': 'Creation Date',
+        'status': 'Status',
+        'priority': 'Priority',
+        'review_type': 'Review Type'
+    }
+    
     def post(self):
         try:
             body = json.loads(self.request.body)
@@ -56,7 +68,7 @@ class ReviewLookupHandler(BaseHandler):
                 self.write(json.dumps({"error": "Review ID is required"}))
                 return
             
-            # Simulate database lookup with arbitrary data
+            # Get review data using shared helper function
             review_data = self.get_review_data(review_id)
             
             response = {"result": review_data}
@@ -67,28 +79,20 @@ class ReviewLookupHandler(BaseHandler):
             self.write(json.dumps({"error": str(e)}))
     
     def get_review_data(self, review_id):
-        # Simulate database lookup - replace with actual database query
-        import random
+        """
+        Get review data with display-friendly field names for frontend
+        Uses the shared get_raw_review_data function and applies field mapping
+        """
+        # Get raw data with internal field names
+        raw_data = get_raw_review_data(review_id)
         
-        # Generate different review data based on ID for variety
-        data_variations = [
-            {
-                "Review ID": "REV-2024-001",
-                "Model Name": "GPT-4"
-            },
-            {
-                "Review ID": "REV-2024-002",
-                "Model Name": "Claude-3-Sonnet"
-            },
-            {
-                "Review ID": "REV-2024-003",
-                "Model Name": "Gemini-Pro"
-            }
-        ]
+        # Apply field mapping for display-friendly names
+        mapped_data = {}
+        for internal_field, value in raw_data.items():
+            display_field = self.DISPLAY_FIELD_MAPPING.get(internal_field, internal_field)
+            mapped_data[display_field] = value
         
-        # Use review_id to determine which variation to return
-        variation_index = hash(review_id) % len(data_variations)
-        return data_variations[variation_index]
+        return mapped_data
 
 
 class GenerateOutlineHandler(BaseHandler):
@@ -304,6 +308,4 @@ if __name__ == "__main__":
     app = make_app()
     app.listen(PORT, HOST)
     print(f"Server running on http://{HOST}:{PORT}")
-    print(f"CORS enabled for frontend: {FRONTEND_URL}")
-    print("Server now supports section-specific prompts!")
     tornado.ioloop.IOLoop.current().start()
