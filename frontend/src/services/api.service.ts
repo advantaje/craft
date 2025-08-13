@@ -11,7 +11,7 @@ import {
   GenerateDocumentResponse,
 } from '../types/document.types';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8888/api';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8888';
 
 // Create axios instance
 export const axiosInstance: AxiosInstance = axios.create({
@@ -27,38 +27,38 @@ interface ApiResponse<T> {
 }
 
 export async function getHello(): Promise<HelloResponse> {
-  const response = await axiosInstance.get<ApiResponse<HelloResponse>>('/hello');
+  const response = await axiosInstance.get<ApiResponse<HelloResponse>>('/api/hello');
   return response.data.result;
 }
 
 export async function lookupReview(request: ReviewLookupRequest): Promise<DocumentInfo> {
-  const response = await axiosInstance.post<ApiResponse<DocumentInfo>>('/review-lookup', request);
+  const response = await axiosInstance.get<ApiResponse<DocumentInfo>>(`/api/review-lookup?id=${encodeURIComponent(request.id)}`);
   return response.data.result;
 }
 
 export async function generateOutline(request: GenerateOutlineRequest): Promise<string> {
-  const response = await axiosInstance.post<ApiResponse<string>>('/generate-outline', request);
+  const response = await axiosInstance.post<ApiResponse<string>>('/api/generate-outline', request);
   return response.data.result;
 }
 
 export async function generateDraftFromOutline(request: GenerateDraftFromOutlineRequest): Promise<string> {
-  const response = await axiosInstance.post<ApiResponse<string>>('/generate-draft-from-outline', request);
+  const response = await axiosInstance.post<ApiResponse<string>>('/api/generate-draft-from-outline', request);
   return response.data.result;
 }
 
 export async function generateReview(request: GenerateReviewRequest): Promise<string> {
-  const response = await axiosInstance.post<ApiResponse<string>>('/generate-review', request);
+  const response = await axiosInstance.post<ApiResponse<string>>('/api/generate-review', request);
   return response.data.result;
 }
 
 export async function generateDraftFromReview(request: GenerateDraftFromReviewRequest): Promise<string> {
-  const response = await axiosInstance.post<ApiResponse<string>>('/generate-draft-from-review', request);
+  const response = await axiosInstance.post<ApiResponse<string>>('/api/generate-draft-from-review', request);
   return response.data.result;
 }
 
 export async function generateDocument(request: GenerateDocumentRequest): Promise<GenerateDocumentResponse> {
   try {
-    const response = await axiosInstance.post<Blob>('/generate-document', request, {
+    const response = await axiosInstance.post<Blob>('/api/generate-document', request, {
       responseType: 'blob'
     });
 
@@ -67,7 +67,7 @@ export async function generateDocument(request: GenerateDocumentRequest): Promis
     
     return { downloadUrl };
   } catch (error) {
-    console.error(`API Error: ${API_BASE_URL}/generate-document`, error);
+    console.error(`API Error: /api/generate-document`, error);
     throw error;
   }
 }
@@ -78,7 +78,7 @@ export async function uploadTemplate(file: File): Promise<{templateKey: string, 
     const formData = new FormData();
     formData.append('template', file);
 
-    const response = await axiosInstance.post<ApiResponse<{templateKey: string, filename: string}>>('/upload-template', formData, {
+    const response = await axiosInstance.post<ApiResponse<{templateKey: string, filename: string}>>('/api/upload-template', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -86,7 +86,7 @@ export async function uploadTemplate(file: File): Promise<{templateKey: string, 
 
     return response.data.result;
   } catch (error) {
-    console.error(`API Error: ${API_BASE_URL}/upload-template`, error);
+    console.error(`API Error: /api/upload-template`, error);
     throw error;
   }
 }

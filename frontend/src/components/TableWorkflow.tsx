@@ -288,7 +288,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
               <TextField
                 fullWidth
                 multiline
-                minRows={6}
+                rows={6}
                 variant="outlined"
                 value={section.data.notes}
                 onChange={(e) => onSectionUpdate(section.id, 'notes', e.target.value)}
@@ -332,7 +332,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
               <TextField
                 fullWidth
                 multiline
-                minRows={6}
+                rows={6}
                 variant="outlined"
                 value={section.data.outline}
                 onChange={(e) => onSectionUpdate(section.id, 'outline', e.target.value)}
@@ -409,7 +409,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
                   <TextField
                     fullWidth
                     multiline
-                    minRows={6}
+                    rows={6}
                     variant="outlined"
                     value={section.data.reviewNotes}
                     onChange={(e) => onSectionUpdate(section.id, 'reviewNotes', e.target.value)}

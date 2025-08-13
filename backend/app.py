@@ -58,10 +58,9 @@ class ReviewLookupHandler(BaseHandler):
         'review_type': 'Review Type'
     }
     
-    def post(self):
+    def get(self):
         try:
-            body = json.loads(self.request.body)
-            review_id = body.get('id', '')
+            review_id = self.get_argument('id', '')
             
             if not review_id.strip():
                 self.set_status(400)

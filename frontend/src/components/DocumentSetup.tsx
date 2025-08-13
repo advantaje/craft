@@ -98,7 +98,7 @@ const DocumentSetup: React.FC<DocumentSetupProps> = ({
     const type = event.target.value as 'default' | 'custom';
     if (type === 'default') {
       onTemplateChange({
-        name: 'template-tagged',
+        name: 'Default Template',
         type: 'default'
       });
       setUploadError(null);
@@ -217,7 +217,7 @@ const DocumentSetup: React.FC<DocumentSetupProps> = ({
                 control={<Radio color="primary" />}
                 label={
                   <Box display="flex" alignItems="center">
-                    <Typography>Default Template (template-tagged.docx)</Typography>
+                    <Typography>Default Template (Basic DOCX)</Typography>
                     {templateInfo.type === 'default' && (
                       <Chip
                         label="Active"

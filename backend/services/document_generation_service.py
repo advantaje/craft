@@ -8,6 +8,7 @@ import json
 from template import DocxTemplate
 import io
 from .review_data_service import get_raw_review_data
+from .template_service import create_default_template
 
 
 class DocumentGenerationService:
@@ -52,15 +53,9 @@ class DocumentGenerationService:
                 if not template_found:
                     return None
             else:
-                # Load default template - try template-tagged.docx first, then fallback to other names
-                template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'template-tagged.docx')
-                if not os.path.exists(template_path):
-                    # Fallback to alternative template names
-                    template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'template-tagged.docx.docx')
-                    if not os.path.exists(template_path):
-                        template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'template-tagged-v2.docx')
-                
-                doc = DocxTemplate(template_path)
+                # Create default template programmatically (no file system dependency)
+                template_buffer = create_default_template()
+                doc = DocxTemplate(template_buffer)
             
             # Create context dictionary with template tags
             context = {}
