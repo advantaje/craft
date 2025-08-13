@@ -87,9 +87,28 @@ class DocumentGenerationService:
                 
                 # Use template tag directly from section data
                 if template_tag and template_tag.strip():
-                    # Clean and format section content
-                    cleaned_content = self._clean_section_content(section_draft, section_type)
-                    context[template_tag.strip()] = cleaned_content
+                    # Handle table sections differently from text sections
+                    if section_type in ['model_limitations', 'model_risk_issues']:
+                        # For table sections, pass raw JSON data as list of dictionaries
+                        try:
+                            table_data = json.loads(section_draft)
+                            if 'rows' in table_data:
+                                # Add id field to each row (1-indexed) and pass to DocxTemplate
+                                rows_with_id = []
+                                for index, row in enumerate(table_data['rows']):
+                                    row_with_id = row.copy()  # Create a copy to avoid modifying original
+                                    row_with_id['id'] = index + 1  # Add 1-indexed ID
+                                    rows_with_id.append(row_with_id)
+                                context[template_tag.strip()] = rows_with_id
+                            else:
+                                context[template_tag.strip()] = []
+                        except (json.JSONDecodeError, TypeError):
+                            # If JSON parsing fails, pass empty list
+                            context[template_tag.strip()] = []
+                    else:
+                        # For text sections, clean and format the content
+                        cleaned_content = self._clean_section_content(section_draft, section_type)
+                        context[template_tag.strip()] = cleaned_content
             
             # Render the document with context
             doc.render(context)
@@ -113,25 +132,16 @@ class DocumentGenerationService:
     
     def _clean_section_content(self, content: str, section_type: str = 'default') -> str:
         """
-        Clean section content by removing generation markers and formatting
+        Clean text section content by removing generation markers and formatting
+        Note: This method is only used for text sections, not table sections
         
         Args:
-            content: Raw section draft content
+            content: Raw section draft content (text only)
             section_type: Type of section for appropriate formatting
             
         Returns:
             Cleaned and formatted content
         """
-        # Check if content is JSON (for model_limitations and model_risk_issues sections)
-        try:
-            table_data = json.loads(content)
-            if 'rows' in table_data:
-                # Format table data as a text table with appropriate columns
-                return self._format_table_as_text(table_data, section_type)
-        except (json.JSONDecodeError, TypeError):
-            # Not JSON, process as regular text
-            pass
-        
         lines = content.split('\n')
         cleaned_lines = []
         
@@ -157,83 +167,6 @@ class DocumentGenerationService:
                 formatted_content.append(line)
         
         return "\n".join(formatted_content)
-    
-    def _format_table_as_text(self, table_data: dict, section_type: str = 'table') -> str:
-        """
-        Format table JSON data as a text table
-        
-        Args:
-            table_data: Dictionary with 'rows' containing table data
-            section_type: Type of section ('model_limitations' for limitations, 'model_risk_issues' for risk issues)
-            
-        Returns:
-            Formatted text table
-        """
-        if not table_data.get('rows'):
-            return "Empty table"
-        
-        # Define column headers, keys, and widths based on section type
-        if section_type == 'model_risk_issues':
-            # Model Risk Issues columns: (display_name, json_key, width)
-            columns = [
-                ('Title', 'title', 25),
-                ('Description', 'description', 50),
-                ('Category', 'category', 20),
-                ('Importance', 'importance', 12)
-            ]
-        elif section_type == 'model_limitations':
-            # Model Limitations columns: (display_name, json_key, width)
-            columns = [
-                ('Title', 'title', 25),
-                ('Description', 'description', 55),
-                ('Category', 'category', 25)
-            ]
-        else:
-            # Default fallback columns
-            columns = [
-                ('Item', 'item', 25),
-                ('Description', 'description', 50),
-                ('Status', 'status', 25)
-            ]
-        
-        lines = []
-        
-        # Calculate the maximum width needed for each column
-        column_widths = []
-        for col_name, col_key, min_width in columns:
-            # Start with header width and minimum width
-            max_width = max(len(col_name), min_width)
-            # Check all data values for this column
-            for row in table_data['rows']:
-                value = str(row.get(col_key, '-'))
-                max_width = max(max_width, len(value))
-            column_widths.append(max_width)
-        
-        # Create header row
-        header = "|"
-        separator = "|"
-        for i, (col_name, col_key, min_width) in enumerate(columns):
-            width = column_widths[i]
-            header += f" {col_name.ljust(width)} |"
-            separator += "-" * (width + 2) + "|"
-        
-        lines.append(header)
-        lines.append(separator)
-        
-        # Add data rows
-        for row in table_data['rows']:
-            row_line = "|"
-            for i, (col_name, col_key, min_width) in enumerate(columns):
-                width = column_widths[i]
-                value = str(row.get(col_key, '-'))
-                row_line += f" {value.ljust(width)} |"
-            lines.append(row_line)
-        
-        # Add footer with row count
-        lines.append(separator)
-        lines.append(f"Total rows: {len(table_data['rows'])}")
-        
-        return "\n".join(lines)
     
     
     def get_filename(self, document_id: str, file_type: str = 'docx') -> str:
