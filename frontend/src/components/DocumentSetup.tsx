@@ -15,7 +15,8 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
-  Chip
+  Chip,
+  Tooltip
 } from '@material-ui/core';
 import { Check as CheckIcon, CloudUpload as UploadIcon, Description as TemplateIcon } from '@material-ui/icons';
 import { lookupReview, uploadTemplate } from '../services/api.service';
@@ -45,14 +46,21 @@ const DocumentInfoDisplay: React.FC<{ data: DocumentInfo }> = ({ data }) => {
       />
       <CardContent style={{ paddingBottom: '2rem' }}>
         <Grid container spacing={2}>
-          {Object.entries(data).map(([field, value], index) => (
+          {Object.entries(data).map(([field, fieldData], index) => (
             <Grid item xs={12} sm={6} md={3} key={index}>
               <Paper elevation={1} style={{ padding: '0.75rem', minHeight: '80px', marginBottom: '0.5rem' }}>
-                <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                  {field}
-                </Typography>
+                <Tooltip title={`Internal field: ${fieldData.internal_field}`} arrow>
+                  <Typography 
+                    variant="subtitle2" 
+                    color="textSecondary" 
+                    gutterBottom
+                    style={{ cursor: 'help', borderBottom: '1px dotted #ccc' }}
+                  >
+                    {field}
+                  </Typography>
+                </Tooltip>
                 <Typography variant="body1" style={{ fontWeight: 500, marginTop: '0.5rem' }}>
-                  {value}
+                  {fieldData.value}
                 </Typography>
               </Paper>
             </Grid>

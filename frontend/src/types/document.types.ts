@@ -29,8 +29,13 @@ export interface TableData {
   rows: Array<{ [columnId: string]: string | number }>;
 }
 
+export interface DocumentFieldData {
+  value: string;
+  internal_field: string;
+}
+
 export interface DocumentInfo {
-  [key: string]: string;
+  [key: string]: DocumentFieldData;
 }
 
 export interface TemplateInfo {

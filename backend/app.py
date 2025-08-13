@@ -79,19 +79,22 @@ class ReviewLookupHandler(BaseHandler):
     
     def get_review_data(self, review_id):
         """
-        Get review data with display-friendly field names for frontend
+        Get review data with both display and internal field names for frontend
         Uses the shared get_raw_review_data function and applies field mapping
         """
         # Get raw data with internal field names
         raw_data = get_raw_review_data(review_id)
         
-        # Apply field mapping for display-friendly names
-        mapped_data = {}
+        # Create enhanced data structure with both display and internal field names
+        enhanced_data = {}
         for internal_field, value in raw_data.items():
             display_field = self.DISPLAY_FIELD_MAPPING.get(internal_field, internal_field)
-            mapped_data[display_field] = value
+            enhanced_data[display_field] = {
+                'value': value,
+                'internal_field': internal_field
+            }
         
-        return mapped_data
+        return enhanced_data
 
 
 class GenerateOutlineHandler(BaseHandler):

@@ -168,17 +168,19 @@ const Craft: React.FC = () => {
           </Typography>
           {documentData && (
             <Box display="flex" alignItems="center" style={{ color: 'white' }}>
-              <Typography variant="body2" style={{ marginRight: '1rem' }}>
-                <strong>Review ID:</strong> {documentData['Review ID'] || documentId}
-              </Typography>
+              {documentData['Review ID'] && (
+                <Typography variant="body2" style={{ marginRight: '1rem' }}>
+                  <strong>Review ID:</strong> {documentData['Review ID'].value}
+                </Typography>
+              )}
               {documentData['Model Name'] && (
                 <Typography variant="body2" style={{ marginRight: '1rem' }}>
-                  <strong>Model:</strong> {documentData['Model Name']}
+                  <strong>Model:</strong> {documentData['Model Name'].value}
                 </Typography>
               )}
               {documentData['Author'] && (
                 <Typography variant="body2">
-                  <strong>Author:</strong> {documentData['Author']}
+                  <strong>Author:</strong> {documentData['Author'].value}
                 </Typography>
               )}
             </Box>
