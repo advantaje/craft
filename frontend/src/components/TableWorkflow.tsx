@@ -17,16 +17,17 @@ import {
   Paper
 } from '@material-ui/core';
 import { Refresh as RefreshIcon, Check as CheckIcon, Warning as WarningIcon, Block as BlockIcon } from '@material-ui/icons';
-import { DocumentSection, SectionData, TableData } from '../types/document.types';
+import { DocumentSection, SectionData, TableData, DiffSegment, DiffSummary } from '../types/document.types';
 import { TableConfiguration } from '../config/tableConfigurations';
 import { 
-  generateOutline, 
-  generateDraftFromOutline, 
+  generateDraftFromNotes, 
   generateReview, 
-  generateDraftFromReview 
+  generateDraftFromReview,
+  generateDraftFromReviewWithDiff 
 } from '../services/api.service';
 import TableEditor from './TableEditor';
 import TableRenderer from './TableRenderer';
+import DraftComparisonDialog from './DraftComparisonDialog';
 
 interface TableWorkflowProps {
   section: DocumentSection;
@@ -45,8 +46,14 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
 }) => {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
+  const [comparisonDialog, setComparisonDialog] = useState({
+    open: false,
+    proposedDraft: '',
+    diffSegments: undefined as DiffSegment[] | undefined,
+    diffSummary: undefined as DiffSummary | undefined
+  });
 
-  const steps = ['Notes', 'Table Structure', 'Table Data & Review'];
+  const steps = ['Notes', 'Table Data & Review'];
 
   const parseTableData = (dataString: string): TableData => {
     try {
@@ -70,20 +77,18 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
 
   const getActiveStep = (): number => {
     if (focusedField === `notes-${section.id}`) return 0;
-    if (focusedField === `outline-${section.id}`) return 1;
-    if (focusedField === `draft-${section.id}` || focusedField === `review-${section.id}`) return 2;
+    if (focusedField === `draft-${section.id}` || focusedField === `review-${section.id}`) return 1;
     return -1;
   };
 
   const getCompletedSteps = (): number[] => {
-    const { outline, draft } = section.data;
+    const { draft } = section.data;
     const completed = [];
-    if (outline.trim()) completed.push(0);
     // Check if draft has actual data rows, not just empty structure
     if (draft.trim() && draft !== '{"rows":[]}') {
       const tableData = parseTableData(draft);
       if (tableData.rows.length > 0) {
-        completed.push(1);
+        completed.push(0);
       }
     }
     return completed;
@@ -93,42 +98,24 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
     setLoading(prev => ({ ...prev, [operation]: state }));
   };
 
-  const handleGenerateOutline = async () => {
+  const handleGenerateTableFromNotes = async () => {
     if (!section.data.notes.trim()) return;
     
-    setLoadingState('outline', true);
+    setLoadingState('table-notes', true);
     try {
-      const result = await generateOutline({ 
+      const result = await generateDraftFromNotes({ 
         notes: section.data.notes,
-        sectionName: section.name,
-        sectionType: tableConfig.sectionType
-      });
-      onSectionUpdate(section.id, 'outline', result);
-    } catch (error) {
-      console.error('Error generating outline:', error);
-    } finally {
-      setLoadingState('outline', false);
-    }
-  };
-
-  const handleGenerateDraftFromOutline = async () => {
-    if (!section.data.outline.trim()) return;
-    
-    setLoadingState('draft-outline', true);
-    try {
-      const result = await generateDraftFromOutline({
-        notes: section.data.notes,
-        outline: section.data.outline,
         sectionName: section.name,
         sectionType: tableConfig.sectionType
       });
       onSectionUpdate(section.id, 'draft', result);
     } catch (error) {
-      console.error('Error generating draft:', error);
+      console.error('Error generating table data:', error);
     } finally {
-      setLoadingState('draft-outline', false);
+      setLoadingState('table-notes', false);
     }
   };
+
 
   const handleGenerateReview = async () => {
     if (!section.data.draft.trim()) return;
@@ -153,38 +140,70 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
     
     setLoadingState('draft-review', true);
     try {
-      const result = await generateDraftFromReview({
+      // Try to use the enhanced API with diff support
+      const result = await generateDraftFromReviewWithDiff({
         draft: section.data.draft,
         reviewNotes: section.data.reviewNotes,
         sectionName: section.name,
         sectionType: tableConfig.sectionType
       });
-      onSectionUpdate(section.id, 'draft', result);
+      
+      // Open comparison dialog with diff data
+      setComparisonDialog({
+        open: true,
+        proposedDraft: result.new_draft,
+        diffSegments: result.diff_segments,
+        diffSummary: result.diff_summary
+      });
     } catch (error) {
-      console.error('Error revising draft:', error);
+      console.error('Error revising draft with diff:', error);
+      
+      // Fallback to original API without diff
+      try {
+        const fallbackResult = await generateDraftFromReview({
+          draft: section.data.draft,
+          reviewNotes: section.data.reviewNotes,
+          sectionName: section.name,
+          sectionType: tableConfig.sectionType
+        });
+        
+        setComparisonDialog({
+          open: true,
+          proposedDraft: fallbackResult,
+          diffSegments: undefined,
+          diffSummary: undefined
+        });
+      } catch (fallbackError) {
+        console.error('Error with fallback API:', fallbackError);
+      }
     } finally {
       setLoadingState('draft-review', false);
     }
+  };
+
+  const handleAcceptChanges = () => {
+    onSectionUpdate(section.id, 'draft', comparisonDialog.proposedDraft);
+    setComparisonDialog({ 
+      open: false, 
+      proposedDraft: '',
+      diffSegments: undefined,
+      diffSummary: undefined
+    });
+  };
+
+  const handleCancelChanges = () => {
+    setComparisonDialog({ 
+      open: false, 
+      proposedDraft: '',
+      diffSegments: undefined,
+      diffSummary: undefined
+    });
   };
 
   const handleTableChange = (tableData: TableData) => {
     onSectionUpdate(section.id, 'draft', JSON.stringify(tableData));
   };
 
-  const renderOutlinePreview = () => {
-    if (!section.data.outline.trim()) return null;
-    
-    return (
-      <Paper elevation={1} style={{ padding: '1rem', marginTop: '1rem', backgroundColor: '#f9f9f9' }}>
-        <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-          Table Structure Preview:
-        </Typography>
-        <Typography variant="body2" style={{ whiteSpace: 'pre-wrap' }}>
-          {section.data.outline}
-        </Typography>
-      </Paper>
-    );
-  };
 
   return (
     <>
@@ -271,17 +290,17 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
                 <Button
                   variant="contained"
                   color="primary"
-                  onClick={handleGenerateOutline}
-                  disabled={!section.data.notes.trim() || loading.outline}
+                  onClick={handleGenerateTableFromNotes}
+                  disabled={!section.data.notes.trim() || loading['table-notes']}
                   size="small"
                 >
-                  {loading.outline ? (
+                  {loading['table-notes'] ? (
                     <>
                       <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
                       Generating...
                     </>
                   ) : (
-                    'Generate Table Plan →'
+                    'Generate Table Data →'
                   )}
                 </Button>
               </Box>
@@ -299,55 +318,9 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
             </CardContent>
           </Card>
 
-          <Card style={{ marginBottom: '1.5rem' }}>
-            <CardHeader 
-              title="Step 2: Table Structure" 
-              subheader="Review the planned table structure and rows"
-            />
-            <CardContent>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                <Typography variant="h6">Table Plan</Typography>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleGenerateDraftFromOutline}
-                  disabled={!section.data.outline.trim() || loading['draft-outline']}
-                  size="small"
-                >
-                  {loading['draft-outline'] ? (
-                    <>
-                      <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
-                      Generating...
-                    </>
-                  ) : (
-                    'Generate Table Data →'
-                  )}
-                </Button>
-              </Box>
-              
-              <Typography variant="body2" color="textSecondary" gutterBottom>
-                Table will have these columns: {tableConfig.columns.map(col => col.label).join(', ')}
-              </Typography>
-              
-              <TextField
-                fullWidth
-                multiline
-                rows={6}
-                variant="outlined"
-                value={section.data.outline}
-                onChange={(e) => onSectionUpdate(section.id, 'outline', e.target.value)}
-                onFocus={() => setFocusedField(`outline-${section.id}`)}
-                onBlur={() => setFocusedField(null)}
-                placeholder="Your outline will appear here, or write it manually..."
-              />
-              
-              {renderOutlinePreview()}
-            </CardContent>
-          </Card>
-
           <Card>
             <CardHeader 
-              title="Step 3: Table Data & Review" 
+              title="Step 2: Table Data & Review" 
               subheader="Edit table data and get feedback"
             />
             <CardContent>
@@ -430,6 +403,18 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
           columns={tableConfig.columns}
         />
       )}
+
+      <DraftComparisonDialog
+        open={comparisonDialog.open}
+        onClose={handleCancelChanges}
+        onAccept={handleAcceptChanges}
+        currentDraft={section.data.draft}
+        proposedDraft={comparisonDialog.proposedDraft}
+        sectionName={section.name}
+        isTable={true}
+        diffSegments={comparisonDialog.diffSegments}
+        diffSummary={comparisonDialog.diffSummary}
+      />
     </>
   );
 };

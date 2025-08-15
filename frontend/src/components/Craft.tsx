@@ -175,12 +175,12 @@ const Craft: React.FC = () => {
               )}
               {documentData['Model Name'] && (
                 <Typography variant="body2" style={{ marginRight: '1rem' }}>
-                  <strong>Model:</strong> {documentData['Model Name'].value}
+                  <strong>Model Name:</strong> {documentData['Model Name'].value}
                 </Typography>
               )}
-              {documentData['Author'] && (
+              {documentData['Review Lead'] && (
                 <Typography variant="body2">
-                  <strong>Author:</strong> {documentData['Author'].value}
+                  <strong>Review Lead:</strong> {documentData['Review Lead'].value}
                 </Typography>
               )}
             </Box>

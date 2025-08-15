@@ -7,8 +7,10 @@ import {
   GenerateDraftFromOutlineRequest,
   GenerateReviewRequest,
   GenerateDraftFromReviewRequest,
+  GenerateDraftFromNotesRequest,
   GenerateDocumentRequest,
   GenerateDocumentResponse,
+  GenerateDraftFromReviewWithDiffResponse,
 } from '../types/document.types';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8888';
@@ -53,6 +55,16 @@ export async function generateReview(request: GenerateReviewRequest): Promise<st
 
 export async function generateDraftFromReview(request: GenerateDraftFromReviewRequest): Promise<string> {
   const response = await axiosInstance.post<ApiResponse<string>>('/api/generate-draft-from-review', request);
+  return response.data.result;
+}
+
+export async function generateDraftFromNotes(request: GenerateDraftFromNotesRequest): Promise<string> {
+  const response = await axiosInstance.post<ApiResponse<string>>('/api/generate-draft-from-notes', request);
+  return response.data.result;
+}
+
+export async function generateDraftFromReviewWithDiff(request: GenerateDraftFromReviewRequest): Promise<GenerateDraftFromReviewWithDiffResponse> {
+  const response = await axiosInstance.post<ApiResponse<GenerateDraftFromReviewWithDiffResponse>>('/api/generate-draft-from-review-with-diff', request);
   return response.data.result;
 }
 

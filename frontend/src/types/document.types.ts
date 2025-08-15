@@ -79,6 +79,12 @@ export interface GenerateDraftFromReviewRequest {
   sectionType: string;
 }
 
+export interface GenerateDraftFromNotesRequest {
+  notes: string;
+  sectionName: string;
+  sectionType: string;
+}
+
 export interface ApiError {
   error: string;
 }
@@ -92,4 +98,23 @@ export interface GenerateDocumentRequest {
 
 export interface GenerateDocumentResponse {
   downloadUrl?: string;
+}
+
+export interface DiffSegment {
+  type: 'unchanged' | 'added' | 'removed';
+  text: string;
+  original: string;
+  revised: string;
+}
+
+export interface DiffSummary {
+  words_added: number;
+  words_removed: number;
+  words_unchanged: number;
+}
+
+export interface GenerateDraftFromReviewWithDiffResponse {
+  new_draft: string;
+  diff_segments: DiffSegment[];
+  diff_summary: DiffSummary;
 }

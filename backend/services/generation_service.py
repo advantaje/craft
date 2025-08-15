@@ -4,6 +4,7 @@ Document generation service with section-aware processing
 
 from services.openai_tools import create_azure_openai_client
 from prompts.section_prompts import SectionPrompts
+from services.diff_service import DocumentDiffService
 
 
 class GenerationService:
@@ -12,7 +13,8 @@ class GenerationService:
     def __init__(self):
         self.prompts = SectionPrompts()
         self.client = create_azure_openai_client()
-        self.model = 'gpt-4.1-mini-2025-04-14'
+        self.model = 'gpt-4.1-nano-2025-04-14'
+        self.diff_service = DocumentDiffService()
     
     def generate_outline_from_notes(self, notes: str, section_name: str, section_type: str) -> str:
         """Generate outline using section-specific prompt"""
@@ -145,3 +147,54 @@ class GenerationService:
         except Exception as e:
             print(f"Error applying review notes: {e}")
             return f"Error applying review notes: {str(e)}. Please check your API configuration."
+    
+    def generate_draft_from_notes(self, notes: str, section_name: str, section_type: str) -> str:
+        """Generate draft directly from notes using internal two-step process (notes -> outline -> draft)"""
+        if not notes.strip():
+            return "Please provide notes to generate a draft."
+        
+        try:
+            # Step 1: Generate outline internally (not returned to user)
+            outline = self.generate_outline_from_notes(notes, section_name, section_type)
+            
+            # Check if outline generation failed
+            if outline.startswith("Error generating outline:"):
+                return f"Error in draft generation: {outline}"
+            
+            # Step 2: Generate draft from the internal outline
+            draft = self.generate_draft_from_outline(notes, outline, section_name, section_type)
+            
+            return draft
+            
+        except Exception as e:
+            print(f"Error generating draft from notes: {e}")
+            return f"Error generating draft: {str(e)}. Please check your API configuration."
+    
+    def apply_review_notes_with_diff(self, draft: str, review_notes: str, section_name: str, section_type: str) -> dict:
+        """Apply review notes and return both new draft and diff data"""
+        if not draft.strip():
+            return {"error": "Please provide a draft to revise."}
+        if not review_notes.strip():
+            return {"error": "Please provide review notes to apply."}
+        
+        try:
+            # Generate the new draft first
+            new_draft = self.apply_review_notes(draft, review_notes, section_name, section_type)
+            
+            # Check if generation failed
+            if new_draft.startswith("Error"):
+                return {"error": new_draft}
+            
+            # Compute diff between original and new draft
+            diff_segments = self.diff_service.compute_document_diff(draft, new_draft)
+            diff_summary = self.diff_service.compute_diff_summary(diff_segments)
+            
+            return {
+                "new_draft": new_draft,
+                "diff_segments": diff_segments,
+                "diff_summary": diff_summary
+            }
+            
+        except Exception as e:
+            print(f"Error applying review notes with diff: {e}")
+            return {"error": f"Error applying review notes: {str(e)}. Please check your API configuration."}

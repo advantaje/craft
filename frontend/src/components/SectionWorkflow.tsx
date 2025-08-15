@@ -15,14 +15,15 @@ import {
   Chip
 } from '@material-ui/core';
 import { Refresh as RefreshIcon, Check as CheckIcon, Warning as WarningIcon, Block as BlockIcon } from '@material-ui/icons';
-import { DocumentSection, SectionData } from '../types/document.types';
+import { DocumentSection, SectionData, DiffSegment, DiffSummary } from '../types/document.types';
 import { 
-  generateOutline, 
-  generateDraftFromOutline, 
+  generateDraftFromNotes, 
   generateReview, 
-  generateDraftFromReview 
+  generateDraftFromReview,
+  generateDraftFromReviewWithDiff 
 } from '../services/api.service';
 import FormattedDocument from './FormattedDocument';
+import DraftComparisonDialog from './DraftComparisonDialog';
 
 interface SectionWorkflowProps {
   section: DocumentSection;
@@ -39,21 +40,25 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
 }) => {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
+  const [comparisonDialog, setComparisonDialog] = useState({
+    open: false,
+    proposedDraft: '',
+    diffSegments: undefined as DiffSegment[] | undefined,
+    diffSummary: undefined as DiffSummary | undefined
+  });
 
-  const steps = ['Notes', 'Draft Outline', 'Draft & Review Cycle'];
+  const steps = ['Notes', 'Draft & Review Cycle'];
 
   const getActiveStep = (): number => {
     if (focusedField === `notes-${section.id}`) return 0;
-    if (focusedField === `outline-${section.id}`) return 1;
-    if (focusedField === `draft-${section.id}` || focusedField === `review-${section.id}`) return 2;
+    if (focusedField === `draft-${section.id}` || focusedField === `review-${section.id}`) return 1;
     return -1;
   };
 
   const getCompletedSteps = (): number[] => {
-    const { outline, draft } = section.data;
+    const { draft } = section.data;
     const completed = [];
-    if (outline.trim()) completed.push(0);
-    if (draft.trim()) completed.push(1);
+    if (draft.trim()) completed.push(0);
     return completed;
   };
 
@@ -61,32 +66,13 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
     setLoading(prev => ({ ...prev, [operation]: state }));
   };
 
-  const handleGenerateOutline = async () => {
+  const handleGenerateDraftFromNotes = async () => {
     if (!section.data.notes.trim()) return;
     
-    setLoadingState('outline', true);
+    setLoadingState('draft-notes', true);
     try {
-      const result = await generateOutline({ 
+      const result = await generateDraftFromNotes({ 
         notes: section.data.notes,
-        sectionName: section.name,
-        sectionType: section.type
-      });
-      onSectionUpdate(section.id, 'outline', result);
-    } catch (error) {
-      console.error('Error generating outline:', error);
-    } finally {
-      setLoadingState('outline', false);
-    }
-  };
-
-  const handleGenerateDraftFromOutline = async () => {
-    if (!section.data.outline.trim()) return;
-    
-    setLoadingState('draft-outline', true);
-    try {
-      const result = await generateDraftFromOutline({
-        notes: section.data.notes,
-        outline: section.data.outline,
         sectionName: section.name,
         sectionType: section.type
       });
@@ -94,9 +80,10 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
     } catch (error) {
       console.error('Error generating draft:', error);
     } finally {
-      setLoadingState('draft-outline', false);
+      setLoadingState('draft-notes', false);
     }
   };
+
 
   const handleGenerateReview = async () => {
     if (!section.data.draft.trim()) return;
@@ -121,18 +108,64 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
     
     setLoadingState('draft-review', true);
     try {
-      const result = await generateDraftFromReview({
+      // Try to use the enhanced API with diff support
+      const result = await generateDraftFromReviewWithDiff({
         draft: section.data.draft,
         reviewNotes: section.data.reviewNotes,
         sectionName: section.name,
         sectionType: section.type
       });
-      onSectionUpdate(section.id, 'draft', result);
+      
+      // Open comparison dialog with diff data
+      setComparisonDialog({
+        open: true,
+        proposedDraft: result.new_draft,
+        diffSegments: result.diff_segments,
+        diffSummary: result.diff_summary
+      });
     } catch (error) {
-      console.error('Error revising draft:', error);
+      console.error('Error revising draft with diff:', error);
+      
+      // Fallback to original API without diff
+      try {
+        const fallbackResult = await generateDraftFromReview({
+          draft: section.data.draft,
+          reviewNotes: section.data.reviewNotes,
+          sectionName: section.name,
+          sectionType: section.type
+        });
+        
+        setComparisonDialog({
+          open: true,
+          proposedDraft: fallbackResult,
+          diffSegments: undefined,
+          diffSummary: undefined
+        });
+      } catch (fallbackError) {
+        console.error('Error with fallback API:', fallbackError);
+      }
     } finally {
       setLoadingState('draft-review', false);
     }
+  };
+
+  const handleAcceptChanges = () => {
+    onSectionUpdate(section.id, 'draft', comparisonDialog.proposedDraft);
+    setComparisonDialog({ 
+      open: false, 
+      proposedDraft: '',
+      diffSegments: undefined,
+      diffSummary: undefined
+    });
+  };
+
+  const handleCancelChanges = () => {
+    setComparisonDialog({ 
+      open: false, 
+      proposedDraft: '',
+      diffSegments: undefined,
+      diffSummary: undefined
+    });
   };
 
   return (
@@ -220,17 +253,17 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
                 <Button
                   variant="contained"
                   color="primary"
-                  onClick={handleGenerateOutline}
-                  disabled={!section.data.notes.trim() || loading.outline}
+                  onClick={handleGenerateDraftFromNotes}
+                  disabled={!section.data.notes.trim() || loading['draft-notes']}
                   size="small"
                 >
-                  {loading.outline ? (
+                  {loading['draft-notes'] ? (
                     <>
                       <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
                       Generating...
                     </>
                   ) : (
-                    'Generate Outline →'
+                    'Generate Draft →'
                   )}
                 </Button>
               </Box>
@@ -248,48 +281,9 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
             </CardContent>
           </Card>
 
-          <Card style={{ marginBottom: '1.5rem' }}>
-            <CardHeader 
-              title="Step 2: Draft Outline" 
-              subheader="Structure your document outline"
-            />
-            <CardContent>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                <Typography variant="h6">Outline</Typography>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleGenerateDraftFromOutline}
-                  disabled={!section.data.outline.trim() || loading['draft-outline']}
-                  size="small"
-                >
-                  {loading['draft-outline'] ? (
-                    <>
-                      <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
-                      Generating...
-                    </>
-                  ) : (
-                    'Generate Draft →'
-                  )}
-                </Button>
-              </Box>
-              <TextField
-                fullWidth
-                multiline
-                rows={6}
-                variant="outlined"
-                value={section.data.outline}
-                onChange={(e) => onSectionUpdate(section.id, 'outline', e.target.value)}
-                onFocus={() => setFocusedField(`outline-${section.id}`)}
-                onBlur={() => setFocusedField(null)}
-                placeholder="Your outline will appear here, or write it manually..."
-              />
-            </CardContent>
-          </Card>
-
           <Card>
             <CardHeader 
-              title="Step 3: Draft & Review Cycle" 
+              title="Step 2: Draft & Review Cycle" 
               subheader="Iterate between draft and review to improve your content"
             />
             <CardContent>
@@ -368,6 +362,18 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
       ) : (
         <FormattedDocument content={section.data.draft} title={section.name} />
       )}
+
+      <DraftComparisonDialog
+        open={comparisonDialog.open}
+        onClose={handleCancelChanges}
+        onAccept={handleAcceptChanges}
+        currentDraft={section.data.draft}
+        proposedDraft={comparisonDialog.proposedDraft}
+        sectionName={section.name}
+        isTable={false}
+        diffSegments={comparisonDialog.diffSegments}
+        diffSummary={comparisonDialog.diffSummary}
+      />
     </>
   );
 };

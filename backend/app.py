@@ -174,6 +174,63 @@ class GenerateDraftFromReviewHandler(BaseHandler):
             self.write(json.dumps({"error": str(e)}))
 
 
+class GenerateDraftFromNotesHandler(BaseHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.generation_service = GenerationService()
+
+    def post(self):
+        try:
+            body = json.loads(self.request.body)
+            notes = body.get('notes', '')
+            section_name = body.get('sectionName', 'Section')
+            section_type = body.get('sectionType', 'default')
+            
+            # Use combined generation service method
+            draft = self.generation_service.generate_draft_from_notes(
+                notes, section_name, section_type
+            )
+            
+            response = {"result": draft}
+            self.set_header("Content-Type", "application/json")
+            self.write(json.dumps(response))
+        except Exception as e:
+            self.set_status(500)
+            self.write(json.dumps({"error": str(e)}))
+
+
+class GenerateDraftFromReviewWithDiffHandler(BaseHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.generation_service = GenerationService()
+
+    def post(self):
+        try:
+            body = json.loads(self.request.body)
+            draft = body.get('draft', '')
+            review_notes = body.get('reviewNotes', '')
+            section_name = body.get('sectionName', 'Section')
+            section_type = body.get('sectionType', 'default')
+            
+            # Use enhanced generation service method with diff computation
+            result = self.generation_service.apply_review_notes_with_diff(
+                draft, review_notes, section_name, section_type
+            )
+            
+            # Check for errors
+            if "error" in result:
+                self.set_status(500)
+                self.write(json.dumps({"error": result["error"]}))
+                return
+            
+            response = {"result": result}
+            self.set_header("Content-Type", "application/json")
+            self.write(json.dumps(response))
+        except Exception as e:
+            self.set_status(500)
+            self.write(json.dumps({"error": str(e)}))
+
+
 class GenerateReviewHandler(BaseHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -299,7 +356,9 @@ def make_app():
         (r"/api/review-lookup", ReviewLookupHandler),
         (r"/api/generate-outline", GenerateOutlineHandler),
         (r"/api/generate-draft-from-outline", GenerateDraftFromOutlineHandler),
+        (r"/api/generate-draft-from-notes", GenerateDraftFromNotesHandler),
         (r"/api/generate-draft-from-review", GenerateDraftFromReviewHandler),
+        (r"/api/generate-draft-from-review-with-diff", GenerateDraftFromReviewWithDiffHandler),
         (r"/api/generate-review", GenerateReviewHandler),
         (r"/api/generate-document", GenerateDocumentHandler),
         (r"/api/upload-template", UploadTemplateHandler),
