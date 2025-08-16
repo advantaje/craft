@@ -331,8 +331,8 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
     <>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Box>
-          <Box display="flex" alignItems="center">
-            <Typography variant="h4" gutterBottom style={{ marginRight: '8px' }}>
+          <Box display="flex" alignItems="center" style={{ marginBottom: '16px' }}>
+            <Typography variant="h4" style={{ marginRight: '8px', marginBottom: 0 }}>
               {section.name} (Table)
             </Typography>
             <Tooltip title="Edit section guidelines">
@@ -356,7 +356,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
           />
         </Box>
         <Box>
-          {section.completionType === 'empty' ? (
+          {section.completionType === 'empty' && (
             <Chip
               icon={<BlockIcon style={{ fontSize: '18px' }} />}
               label="Section Excluded"
@@ -369,31 +369,24 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
                 paddingLeft: '8px'
               }}
             />
-          ) : !hasTableData() && (
-            <Chip
-              icon={<WarningIcon style={{ fontSize: '18px' }} />}
-              label="Table data required to complete"
-              color="secondary"
-              variant="outlined"
-              style={{ 
-                marginRight: '1rem',
-                backgroundColor: '#fff3e0',
-                borderColor: '#ff9800',
-                color: '#e65100',
-                paddingLeft: '8px'
-              }}
-            />
           )}
-          <Button
-            variant={section.isCompleted ? "outlined" : "contained"}
-            color={section.isCompleted ? "secondary" : "primary"}
-            onClick={() => onToggleCompletion(section.id, 'normal')}
-            disabled={!hasTableData()}
-            startIcon={section.isCompleted ? undefined : <CheckIcon />}
-            size="large"
+          <Tooltip 
+            title={!hasTableData() ? "Table data required to complete" : ""}
+            disableHoverListener={hasTableData() || section.isCompleted}
           >
-            {section.isCompleted ? 'Reopen Section' : 'Mark Complete'}
-          </Button>
+            <span>
+              <Button
+                variant={section.isCompleted ? "outlined" : "contained"}
+                color={section.isCompleted ? "secondary" : "primary"}
+                onClick={() => onToggleCompletion(section.id, 'normal')}
+                disabled={!hasTableData()}
+                startIcon={section.isCompleted ? undefined : <CheckIcon />}
+                size="large"
+              >
+                {section.isCompleted ? 'Reopen Section' : 'Mark Complete'}
+              </Button>
+            </span>
+          </Tooltip>
         </Box>
       </Box>
 

@@ -201,8 +201,8 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
     <>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Box>
-          <Box display="flex" alignItems="center">
-            <Typography variant="h4" gutterBottom style={{ marginRight: '8px' }}>
+          <Box display="flex" alignItems="center" style={{ marginBottom: '16px' }}>
+            <Typography variant="h4" style={{ marginRight: '8px', marginBottom: 0 }}>
               {section.name}
             </Typography>
             <Tooltip title="Edit section guidelines">
@@ -226,7 +226,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
           />
         </Box>
         <Box>
-          {section.completionType === 'empty' ? (
+          {section.completionType === 'empty' && (
             <Chip
               icon={<BlockIcon style={{ fontSize: '18px' }} />}
               label="Section Excluded"
@@ -239,31 +239,24 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
                 paddingLeft: '8px'
               }}
             />
-          ) : !section.data.draft.trim() && (
-            <Chip
-              icon={<WarningIcon style={{ fontSize: '18px' }} />}
-              label="Draft required to complete"
-              color="secondary"
-              variant="outlined"
-              style={{ 
-                marginRight: '1rem',
-                backgroundColor: '#fff3e0',
-                borderColor: '#ff9800',
-                color: '#e65100',
-                paddingLeft: '8px'
-              }}
-            />
           )}
-          <Button
-            variant={section.isCompleted ? "outlined" : "contained"}
-            color={section.isCompleted ? "secondary" : "primary"}
-            onClick={() => onToggleCompletion(section.id, 'normal')}
-            disabled={!section.data.draft.trim()}
-            startIcon={section.isCompleted ? undefined : <CheckIcon />}
-            size="large"
+          <Tooltip 
+            title={!section.data.draft.trim() ? "Draft required to complete" : ""}
+            disableHoverListener={!!section.data.draft.trim() || section.isCompleted}
           >
-            {section.isCompleted ? 'Reopen Section' : 'Mark Complete'}
-          </Button>
+            <span>
+              <Button
+                variant={section.isCompleted ? "outlined" : "contained"}
+                color={section.isCompleted ? "secondary" : "primary"}
+                onClick={() => onToggleCompletion(section.id, 'normal')}
+                disabled={!section.data.draft.trim()}
+                startIcon={section.isCompleted ? undefined : <CheckIcon />}
+                size="large"
+              >
+                {section.isCompleted ? 'Reopen Section' : 'Mark Complete'}
+              </Button>
+            </span>
+          </Tooltip>
         </Box>
       </Box>
 
