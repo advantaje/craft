@@ -12,9 +12,17 @@ import {
   Stepper,
   Step,
   StepLabel,
-  Chip
+  Chip,
+  IconButton,
+  Tooltip
 } from '@material-ui/core';
-import { Refresh as RefreshIcon, Check as CheckIcon, Warning as WarningIcon, Block as BlockIcon } from '@material-ui/icons';
+import { 
+  Refresh as RefreshIcon, 
+  Check as CheckIcon, 
+  Warning as WarningIcon, 
+  Block as BlockIcon,
+  Settings as SettingsIcon 
+} from '@material-ui/icons';
 import { DocumentSection, SectionData, DiffSegment, DiffSummary } from '../types/document.types';
 import { 
   generateDraftFromNotes, 
@@ -24,19 +32,23 @@ import {
 } from '../services/api.service';
 import FormattedDocument from './FormattedDocument';
 import DraftComparisonDialog from './DraftComparisonDialog';
+import GuidelinesEditorModal from './GuidelinesEditorModal';
+import { getSectionDefaultGuidelines, SectionGuidelines } from '../config/defaultGuidelines';
 
 interface SectionWorkflowProps {
   section: DocumentSection;
   onSectionUpdate: (sectionId: string, field: keyof SectionData, value: string) => void;
   onToggleCompletion: (sectionId: string, completionType?: 'normal' | 'empty' | 'unexclude') => void;
   onTemplateTagUpdate: (sectionId: string, templateTag: string) => void;
+  onGuidelinesUpdate: (sectionId: string, guidelines: any) => void;
 }
 
 const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
   section,
   onSectionUpdate,
   onToggleCompletion,
-  onTemplateTagUpdate
+  onTemplateTagUpdate,
+  onGuidelinesUpdate
 }) => {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
@@ -46,6 +58,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
     diffSegments: undefined as DiffSegment[] | undefined,
     diffSummary: undefined as DiffSummary | undefined
   });
+  const [guidelinesModalOpen, setGuidelinesModalOpen] = useState(false);
 
   const steps = ['Notes', 'Draft & Review Cycle'];
 
@@ -74,7 +87,8 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
       const result = await generateDraftFromNotes({ 
         notes: section.data.notes,
         sectionName: section.name,
-        sectionType: section.type
+        sectionType: section.type,
+        guidelines: section.guidelines?.draft
       });
       onSectionUpdate(section.id, 'draft', result);
     } catch (error) {
@@ -93,7 +107,8 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
       const result = await generateReview({ 
         draft: section.data.draft,
         sectionName: section.name,
-        sectionType: section.type
+        sectionType: section.type,
+        guidelines: section.guidelines?.review
       });
       onSectionUpdate(section.id, 'reviewNotes', result);
     } catch (error) {
@@ -113,7 +128,8 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
         draft: section.data.draft,
         reviewNotes: section.data.reviewNotes,
         sectionName: section.name,
-        sectionType: section.type
+        sectionType: section.type,
+        guidelines: section.guidelines?.revision
       });
       
       // Open comparison dialog with diff data
@@ -132,7 +148,8 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
           draft: section.data.draft,
           reviewNotes: section.data.reviewNotes,
           sectionName: section.name,
-          sectionType: section.type
+          sectionType: section.type,
+          guidelines: section.guidelines?.revision
         });
         
         setComparisonDialog({
@@ -168,13 +185,35 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
     });
   };
 
+  const handleOpenGuidelinesModal = () => {
+    setGuidelinesModalOpen(true);
+  };
+
+  const handleCloseGuidelinesModal = () => {
+    setGuidelinesModalOpen(false);
+  };
+
+  const handleSaveGuidelines = (guidelines: SectionGuidelines) => {
+    onGuidelinesUpdate(section.id, guidelines);
+  };
+
   return (
     <>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Box>
-          <Typography variant="h4" gutterBottom>
-            {section.name}
-          </Typography>
+          <Box display="flex" alignItems="center">
+            <Typography variant="h4" gutterBottom style={{ marginRight: '8px' }}>
+              {section.name}
+            </Typography>
+            <Tooltip title="Edit section guidelines">
+              <IconButton
+                onClick={handleOpenGuidelinesModal}
+                size="small"
+              >
+                <SettingsIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
           <TextField
             label="Template Tag"
             value={section.templateTag || ''}
@@ -373,6 +412,16 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
         isTable={false}
         diffSegments={comparisonDialog.diffSegments}
         diffSummary={comparisonDialog.diffSummary}
+      />
+
+      <GuidelinesEditorModal
+        open={guidelinesModalOpen}
+        onClose={handleCloseGuidelinesModal}
+        guidelines={section.guidelines || getSectionDefaultGuidelines(section.type)}
+        onSave={handleSaveGuidelines}
+        sectionName={section.name}
+        sectionType={section.type}
+        defaultGuidelines={getSectionDefaultGuidelines(section.type)}
       />
     </>
   );

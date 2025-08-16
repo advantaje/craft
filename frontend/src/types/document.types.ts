@@ -10,6 +10,12 @@ export interface DocumentSection {
   name: string;
   type: string;
   templateTag?: string;
+  guidelines?: {
+    outline: string;
+    draft: string;
+    review: string;
+    revision: string;
+  };
   data: SectionData;
   isCompleted: boolean;
   completionType?: 'normal' | 'empty';
@@ -57,6 +63,7 @@ export interface GenerateOutlineRequest {
   notes: string;
   sectionName: string;
   sectionType: string;
+  guidelines?: string;
 }
 
 export interface GenerateDraftFromOutlineRequest {
@@ -64,12 +71,14 @@ export interface GenerateDraftFromOutlineRequest {
   outline: string;
   sectionName: string;
   sectionType: string;
+  guidelines?: string;
 }
 
 export interface GenerateReviewRequest {
   draft: string;
   sectionName: string;
   sectionType: string;
+  guidelines?: string;
 }
 
 export interface GenerateDraftFromReviewRequest {
@@ -77,12 +86,14 @@ export interface GenerateDraftFromReviewRequest {
   reviewNotes: string;
   sectionName: string;
   sectionType: string;
+  guidelines?: string;
 }
 
 export interface GenerateDraftFromNotesRequest {
   notes: string;
   sectionName: string;
   sectionType: string;
+  guidelines?: string;
 }
 
 export interface ApiError {
@@ -115,6 +126,26 @@ export interface DiffSummary {
 
 export interface GenerateDraftFromReviewWithDiffResponse {
   new_draft: string;
+  original_formatted?: string;
+  new_formatted?: string;
+  diff_segments: DiffSegment[];
+  diff_summary: DiffSummary;
+}
+
+export interface GenerateRowReviewRequest {
+  rowData: { [key: string]: string | number };
+  rowIndex: number;
+  reviewNotes: string;
+  columns: TableColumn[];
+  sectionName: string;
+  sectionType?: string;
+  guidelines?: string;
+}
+
+export interface GenerateRowReviewResponse {
+  new_row: { [key: string]: string | number };
+  original_formatted: string;
+  new_formatted: string;
   diff_segments: DiffSegment[];
   diff_summary: DiffSummary;
 }

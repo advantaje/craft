@@ -14,20 +14,31 @@ import {
   Step,
   StepLabel,
   Chip,
-  Paper
+  Paper,
+  IconButton,
+  Tooltip
 } from '@material-ui/core';
-import { Refresh as RefreshIcon, Check as CheckIcon, Warning as WarningIcon, Block as BlockIcon } from '@material-ui/icons';
+import { 
+  Refresh as RefreshIcon, 
+  Check as CheckIcon, 
+  Warning as WarningIcon, 
+  Block as BlockIcon,
+  Settings as SettingsIcon 
+} from '@material-ui/icons';
 import { DocumentSection, SectionData, TableData, DiffSegment, DiffSummary } from '../types/document.types';
 import { TableConfiguration } from '../config/tableConfigurations';
 import { 
   generateDraftFromNotes, 
   generateReview, 
   generateDraftFromReview,
-  generateDraftFromReviewWithDiff 
+  generateDraftFromReviewWithDiff,
+  generateRowReviewWithDiff 
 } from '../services/api.service';
 import TableEditor from './TableEditor';
 import TableRenderer from './TableRenderer';
 import DraftComparisonDialog from './DraftComparisonDialog';
+import GuidelinesEditorModal from './GuidelinesEditorModal';
+import { getSectionDefaultGuidelines, SectionGuidelines } from '../config/defaultGuidelines';
 
 interface TableWorkflowProps {
   section: DocumentSection;
@@ -35,6 +46,7 @@ interface TableWorkflowProps {
   onSectionUpdate: (sectionId: string, field: keyof SectionData, value: string) => void;
   onToggleCompletion: (sectionId: string, completionType?: 'normal' | 'empty' | 'unexclude') => void;
   onTemplateTagUpdate: (sectionId: string, templateTag: string) => void;
+  onGuidelinesUpdate: (sectionId: string, guidelines: any) => void;
 }
 
 const TableWorkflow: React.FC<TableWorkflowProps> = ({
@@ -42,16 +54,26 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
   tableConfig,
   onSectionUpdate,
   onToggleCompletion,
-  onTemplateTagUpdate
+  onTemplateTagUpdate,
+  onGuidelinesUpdate
 }) => {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
+  const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
   const [comparisonDialog, setComparisonDialog] = useState({
     open: false,
     proposedDraft: '',
     diffSegments: undefined as DiffSegment[] | undefined,
     diffSummary: undefined as DiffSummary | undefined
   });
+  const [rowComparisonDialog, setRowComparisonDialog] = useState({
+    open: false,
+    originalRow: '',
+    proposedRow: '',
+    diffSegments: undefined as DiffSegment[] | undefined,
+    diffSummary: undefined as DiffSummary | undefined
+  });
+  const [guidelinesModalOpen, setGuidelinesModalOpen] = useState(false);
 
   const steps = ['Notes', 'Table Data & Review'];
 
@@ -66,6 +88,9 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
     }
     return { rows: [] };
   };
+
+  // Get field order for consistent formatting
+  const getFieldOrder = () => tableConfig.columns.map(col => col.id);
 
   const hasTableData = (): boolean => {
     if (!section.data.draft.trim() || section.data.draft === '{"rows":[]}') {
@@ -106,7 +131,8 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
       const result = await generateDraftFromNotes({ 
         notes: section.data.notes,
         sectionName: section.name,
-        sectionType: tableConfig.sectionType
+        sectionType: tableConfig.sectionType,
+        guidelines: section.guidelines?.draft
       });
       onSectionUpdate(section.id, 'draft', result);
     } catch (error) {
@@ -120,16 +146,59 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
   const handleGenerateReview = async () => {
     if (!section.data.draft.trim()) return;
     
+    // If a row is selected, do row-specific review
+    if (selectedRowIndex !== null) {
+      await handleGenerateRowReview();
+      return;
+    }
+    
+    // Otherwise, do full table review
     setLoadingState('review', true);
     try {
       const result = await generateReview({ 
         draft: section.data.draft,
         sectionName: section.name,
-        sectionType: tableConfig.sectionType
+        sectionType: tableConfig.sectionType,
+        guidelines: section.guidelines?.review
       });
       onSectionUpdate(section.id, 'reviewNotes', result);
     } catch (error) {
       console.error('Error generating review:', error);
+    } finally {
+      setLoadingState('review', false);
+    }
+  };
+
+  const handleGenerateRowReview = async () => {
+    if (selectedRowIndex === null || !section.data.reviewNotes.trim()) return;
+    
+    const tableData = parseTableData(section.data.draft);
+    const rowData = tableData.rows[selectedRowIndex];
+    
+    if (!rowData) return;
+    
+    setLoadingState('review', true);
+    try {
+      const result = await generateRowReviewWithDiff({
+        rowData,
+        rowIndex: selectedRowIndex,
+        reviewNotes: section.data.reviewNotes,
+        columns: tableConfig.columns,
+        sectionName: section.name,
+        sectionType: tableConfig.sectionType,
+        guidelines: section.guidelines?.revision
+      });
+      
+      // Open row comparison dialog using backend-formatted strings
+      setRowComparisonDialog({
+        open: true,
+        originalRow: result.original_formatted,
+        proposedRow: result.new_formatted,
+        diffSegments: result.diff_segments,
+        diffSummary: result.diff_summary
+      });
+    } catch (error) {
+      console.error('Error generating row review:', error);
     } finally {
       setLoadingState('review', false);
     }
@@ -145,13 +214,14 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
         draft: section.data.draft,
         reviewNotes: section.data.reviewNotes,
         sectionName: section.name,
-        sectionType: tableConfig.sectionType
+        sectionType: tableConfig.sectionType,
+        guidelines: section.guidelines?.revision
       });
       
       // Open comparison dialog with diff data
       setComparisonDialog({
         open: true,
-        proposedDraft: result.new_draft,
+        proposedDraft: result.new_formatted || result.new_draft,
         diffSegments: result.diff_segments,
         diffSummary: result.diff_summary
       });
@@ -164,7 +234,8 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
           draft: section.data.draft,
           reviewNotes: section.data.reviewNotes,
           sectionName: section.name,
-          sectionType: tableConfig.sectionType
+          sectionType: tableConfig.sectionType,
+          guidelines: section.guidelines?.revision
         });
         
         setComparisonDialog({
@@ -204,14 +275,75 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
     onSectionUpdate(section.id, 'draft', JSON.stringify(tableData));
   };
 
+  const handleRowSelect = (index: number) => {
+    setSelectedRowIndex(index);
+  };
+
+  const handleAcceptRowChanges = () => {
+    const tableData = parseTableData(section.data.draft);
+    const updatedRows = [...tableData.rows];
+    
+    // Parse the new row data from the dialog
+    try {
+      const newRowData = JSON.parse(rowComparisonDialog.proposedRow);
+      if (selectedRowIndex !== null && selectedRowIndex < updatedRows.length) {
+        updatedRows[selectedRowIndex] = newRowData;
+        const updatedTableData = { rows: updatedRows };
+        onSectionUpdate(section.id, 'draft', JSON.stringify(updatedTableData));
+      }
+    } catch (error) {
+      console.error('Error parsing row data:', error);
+    }
+    
+    setRowComparisonDialog({ 
+      open: false, 
+      originalRow: '',
+      proposedRow: '',
+      diffSegments: undefined,
+      diffSummary: undefined
+    });
+  };
+
+  const handleCancelRowChanges = () => {
+    setRowComparisonDialog({ 
+      open: false, 
+      originalRow: '',
+      proposedRow: '',
+      diffSegments: undefined,
+      diffSummary: undefined
+    });
+  };
+
+  const handleOpenGuidelinesModal = () => {
+    setGuidelinesModalOpen(true);
+  };
+
+  const handleCloseGuidelinesModal = () => {
+    setGuidelinesModalOpen(false);
+  };
+
+  const handleSaveGuidelines = (guidelines: SectionGuidelines) => {
+    onGuidelinesUpdate(section.id, guidelines);
+  };
+
 
   return (
     <>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Box>
-          <Typography variant="h4" gutterBottom>
-            {section.name} (Table)
-          </Typography>
+          <Box display="flex" alignItems="center">
+            <Typography variant="h4" gutterBottom style={{ marginRight: '8px' }}>
+              {section.name} (Table)
+            </Typography>
+            <Tooltip title="Edit section guidelines">
+              <IconButton
+                onClick={handleOpenGuidelinesModal}
+                size="small"
+              >
+                <SettingsIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
           <TextField
             label="Template Tag"
             value={section.templateTag || ''}
@@ -340,6 +472,8 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
                           <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
                           Analyzing...
                         </>
+                      ) : selectedRowIndex !== null ? (
+                        `Review Row #${selectedRowIndex + 1} →`
                       ) : (
                         'Generate Review →'
                       )}
@@ -351,6 +485,9 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
                     columns={tableConfig.columns}
                     onChange={handleTableChange}
                     readOnly={false}
+                    selectedRowIndex={selectedRowIndex ?? undefined}
+                    onRowSelect={handleRowSelect}
+                    showRowSelection={true}
                   />
                 </Grid>
 
@@ -412,8 +549,32 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
         proposedDraft={comparisonDialog.proposedDraft}
         sectionName={section.name}
         isTable={true}
+        fieldOrder={getFieldOrder()}
         diffSegments={comparisonDialog.diffSegments}
         diffSummary={comparisonDialog.diffSummary}
+      />
+      
+      <DraftComparisonDialog
+        open={rowComparisonDialog.open}
+        onClose={handleCancelRowChanges}
+        onAccept={handleAcceptRowChanges}
+        currentDraft={rowComparisonDialog.originalRow}
+        proposedDraft={rowComparisonDialog.proposedRow}
+        sectionName={`${section.name} - Row #${(selectedRowIndex ?? 0) + 1}`}
+        isTable={true}
+        fieldOrder={getFieldOrder()}
+        diffSegments={rowComparisonDialog.diffSegments}
+        diffSummary={rowComparisonDialog.diffSummary}
+      />
+
+      <GuidelinesEditorModal
+        open={guidelinesModalOpen}
+        onClose={handleCloseGuidelinesModal}
+        guidelines={section.guidelines || getSectionDefaultGuidelines(section.type)}
+        onSave={handleSaveGuidelines}
+        sectionName={section.name}
+        sectionType={section.type}
+        defaultGuidelines={getSectionDefaultGuidelines(section.type)}
       />
     </>
   );

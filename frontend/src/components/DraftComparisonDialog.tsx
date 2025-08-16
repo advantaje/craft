@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -6,14 +6,15 @@ import {
   DialogActions,
   Button,
   Typography,
-  Grid,
-  TextField,
   Box,
-  Divider,
-  Paper
+  RadioGroup,
+  FormControlLabel,
+  Radio
 } from '@material-ui/core';
 import { Check as CheckIcon, Close as CloseIcon } from '@material-ui/icons';
 import { DiffSegment, DiffSummary } from '../types/document.types';
+import DiffViewer, { DiffViewMode } from './DiffViewer';
+import { dialogStyles } from '../utils/diffStyles';
 
 interface DraftComparisonDialogProps {
   open: boolean;
@@ -23,6 +24,7 @@ interface DraftComparisonDialogProps {
   proposedDraft: string;
   sectionName: string;
   isTable?: boolean;
+  fieldOrder?: string[];
   diffSegments?: DiffSegment[];
   diffSummary?: DiffSummary;
 }
@@ -35,66 +37,23 @@ const DraftComparisonDialog: React.FC<DraftComparisonDialogProps> = ({
   proposedDraft,
   sectionName,
   isTable = false,
+  fieldOrder,
   diffSegments,
   diffSummary
 }) => {
+  const [viewMode, setViewMode] = useState<DiffViewMode>('unified');
+
   const handleAccept = () => {
     onAccept();
     onClose();
   };
 
-  const formatContent = (content: string) => {
-    if (isTable) {
-      try {
-        const parsed = JSON.parse(content);
-        return JSON.stringify(parsed, null, 2);
-      } catch {
-        return content;
-      }
-    }
-    return content;
-  };
-
-  const renderDiffContent = (segments: DiffSegment[]) => {
-    return (
-      <Box
-        style={{
-          whiteSpace: 'pre-wrap',
-          fontFamily: isTable ? 'monospace' : 'inherit',
-          fontSize: isTable ? '0.875rem' : 'inherit',
-          padding: '12px',
-          backgroundColor: '#fafafa',
-          border: '1px solid #e0e0e0',
-          borderRadius: '4px',
-          height: '100%',
-          overflow: 'auto'
-        }}
-      >
-        {segments.map((segment, index) => (
-          <span
-            key={index}
-            style={{
-              backgroundColor:
-                segment.type === 'added' ? '#d4f4dd' :
-                segment.type === 'removed' ? '#ffebee' :
-                'transparent',
-              textDecoration: segment.type === 'removed' ? 'line-through' : 'none',
-              color:
-                segment.type === 'added' ? '#1b5e20' :
-                segment.type === 'removed' ? '#b71c1c' :
-                'inherit',
-              borderBottom: segment.type === 'added' ? '1px solid #4caf50' : 'none'
-            }}
-          >
-            {isTable ? formatContent(segment.text) : segment.text}
-          </span>
-        ))}
-      </Box>
-    );
+  const handleViewModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setViewMode(event.target.value as DiffViewMode);
   };
 
   const renderSummary = (summary: DiffSummary) => (
-    <Box mb={2} p={2} style={{ backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+    <Box style={dialogStyles.summary}>
       <Typography variant="body2" color="textSecondary">
         <strong>Changes Summary:</strong>{' '}
         <span style={{ color: '#4caf50' }}>+{summary.words_added} words</span>
@@ -115,10 +74,7 @@ const DraftComparisonDialog: React.FC<DraftComparisonDialogProps> = ({
       maxWidth="lg"
       fullWidth
       PaperProps={{
-        style: {
-          height: '80vh',
-          maxHeight: '800px'
-        }
+        style: dialogStyles.dialog
       }}
     >
       <DialogTitle>
@@ -126,81 +82,53 @@ const DraftComparisonDialog: React.FC<DraftComparisonDialogProps> = ({
           Review Changes for "{sectionName}"
         </Typography>
         <Typography variant="body2" color="textSecondary">
-          {diffSegments ? 'Differences are highlighted below' : 'Compare the current version with the proposed changes'}
+          {diffSegments ? 'Choose your preferred view mode below' : 'Compare the current version with the proposed changes'}
         </Typography>
         {diffSummary && renderSummary(diffSummary)}
+        
+        {/* View Mode Selector */}
+        {diffSegments && (
+          <Box style={dialogStyles.viewModeSelector}>
+            <Typography variant="subtitle2" gutterBottom style={{ fontWeight: 'bold' }}>
+              View Mode:
+            </Typography>
+            <RadioGroup 
+              row 
+              value={viewMode} 
+              onChange={handleViewModeChange}
+              style={{ marginTop: '8px' }}
+            >
+              <FormControlLabel 
+                value="unified" 
+                control={<Radio size="small" />} 
+                label="Unified View" 
+                style={{ marginRight: '24px' }}
+              />
+              <FormControlLabel 
+                value="sideBySide" 
+                control={<Radio size="small" />} 
+                label="Side by Side" 
+                style={{ marginRight: '24px' }}
+              />
+              <FormControlLabel 
+                value="sideBySideDiff" 
+                control={<Radio size="small" />} 
+                label="Side by Side (Highlighted)" 
+              />
+            </RadioGroup>
+          </Box>
+        )}
       </DialogTitle>
       
       <DialogContent dividers style={{ padding: 0 }}>
-        {diffSegments ? (
-          // Unified diff view with highlights
-          <Box p={2} style={{ height: '100%' }}>
-            <Typography variant="subtitle1" gutterBottom style={{ fontWeight: 'bold', marginBottom: '16px' }}>
-              Proposed Changes (Highlighted)
-            </Typography>
-            {renderDiffContent(diffSegments)}
-          </Box>
-        ) : (
-          // Side-by-side comparison (fallback)
-          <Grid container style={{ height: '100%' }}>
-            <Grid item xs={6} style={{ borderRight: '1px solid #e0e0e0' }}>
-              <Box p={2} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Typography variant="subtitle1" gutterBottom style={{ fontWeight: 'bold', color: '#666' }}>
-                  Current Version
-                </Typography>
-                <TextField
-                  fullWidth
-                  multiline
-                  variant="outlined"
-                  value={formatContent(currentDraft)}
-                  InputProps={{
-                    readOnly: true,
-                    style: {
-                      fontFamily: isTable ? 'monospace' : 'inherit',
-                      fontSize: isTable ? '0.875rem' : 'inherit'
-                    }
-                  }}
-                  style={{ flex: 1 }}
-                  inputProps={{
-                    style: {
-                      height: '100%',
-                      overflow: 'auto'
-                    }
-                  }}
-                />
-              </Box>
-            </Grid>
-            
-            <Grid item xs={6}>
-              <Box p={2} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Typography variant="subtitle1" gutterBottom style={{ fontWeight: 'bold', color: '#2e7d32' }}>
-                  Proposed Changes
-                </Typography>
-                <TextField
-                  fullWidth
-                  multiline
-                  variant="outlined"
-                  value={formatContent(proposedDraft)}
-                  InputProps={{
-                    readOnly: true,
-                    style: {
-                      fontFamily: isTable ? 'monospace' : 'inherit',
-                      fontSize: isTable ? '0.875rem' : 'inherit',
-                      backgroundColor: '#f8fff8'
-                    }
-                  }}
-                  style={{ flex: 1 }}
-                  inputProps={{
-                    style: {
-                      height: '100%',
-                      overflow: 'auto'
-                    }
-                  }}
-                />
-              </Box>
-            </Grid>
-          </Grid>
-        )}
+        <DiffViewer
+          currentContent={currentDraft}
+          proposedContent={proposedDraft}
+          isTable={isTable}
+          fieldOrder={fieldOrder}
+          diffSegments={diffSegments}
+          viewMode={viewMode}
+        />
       </DialogContent>
       
       <DialogActions style={{ padding: '16px 24px' }}>

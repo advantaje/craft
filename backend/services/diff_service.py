@@ -24,6 +24,83 @@ class DocumentDiffService:
         if not original.strip() or not revised.strip():
             return self._handle_empty_content(original, revised)
         
+        # Check if content looks like JSON (starts with { or [)
+        is_json_like = (original.strip().startswith('{') or original.strip().startswith('[')) and (revised.strip().startswith('{') or revised.strip().startswith('['))
+        
+        if is_json_like:
+            # For JSON content, use line-based diffing to preserve structure
+            return self._compute_line_based_diff(original, revised)
+        else:
+            # For regular text, use word-level diffing
+            return self._compute_word_based_diff(original, revised)
+    
+    def _compute_line_based_diff(self, original: str, revised: str) -> List[Dict[str, Any]]:
+        """Compute diff using line-based comparison for structured content like JSON"""
+        original_lines = original.splitlines(keepends=True)
+        revised_lines = revised.splitlines(keepends=True)
+        
+        matcher = difflib.SequenceMatcher(None, original_lines, revised_lines)
+        diff_segments = []
+        
+        for operation, orig_start, orig_end, rev_start, rev_end in matcher.get_opcodes():
+            if operation == 'equal':
+                # Unchanged lines
+                text = ''.join(original_lines[orig_start:orig_end])
+                if text.strip():
+                    diff_segments.append({
+                        'type': 'unchanged',
+                        'text': text,
+                        'original': text,
+                        'revised': text
+                    })
+                    
+            elif operation == 'delete':
+                # Removed lines
+                text = ''.join(original_lines[orig_start:orig_end])
+                if text.strip():
+                    diff_segments.append({
+                        'type': 'removed',
+                        'text': text,
+                        'original': text,
+                        'revised': ''
+                    })
+                    
+            elif operation == 'insert':
+                # Added lines
+                text = ''.join(revised_lines[rev_start:rev_end])
+                if text.strip():
+                    diff_segments.append({
+                        'type': 'added',
+                        'text': text,
+                        'original': '',
+                        'revised': text
+                    })
+                    
+            elif operation == 'replace':
+                # Modified lines - show both removed and added
+                orig_text = ''.join(original_lines[orig_start:orig_end])
+                rev_text = ''.join(revised_lines[rev_start:rev_end])
+                
+                if orig_text.strip():
+                    diff_segments.append({
+                        'type': 'removed',
+                        'text': orig_text,
+                        'original': orig_text,
+                        'revised': ''
+                    })
+                
+                if rev_text.strip():
+                    diff_segments.append({
+                        'type': 'added',
+                        'text': rev_text,
+                        'original': '',
+                        'revised': rev_text
+                    })
+        
+        return diff_segments
+    
+    def _compute_word_based_diff(self, original: str, revised: str) -> List[Dict[str, Any]]:
+        """Compute diff using word-based comparison for regular text"""
         # For documents, we'll work with word-level diffing for natural readability
         original_words = self._split_into_words(original)
         revised_words = self._split_into_words(revised)

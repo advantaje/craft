@@ -13,7 +13,8 @@ import {
   IconButton,
   Button,
   Box,
-  FormControl
+  FormControl,
+  Radio
 } from '@material-ui/core';
 import { Delete as DeleteIcon, Add as AddIcon } from '@material-ui/icons';
 import { TableColumn, TableData } from '../types/document.types';
@@ -23,13 +24,19 @@ interface TableEditorProps {
   columns: TableColumn[];
   onChange: (data: TableData) => void;
   readOnly?: boolean;
+  selectedRowIndex?: number;
+  onRowSelect?: (index: number) => void;
+  showRowSelection?: boolean;
 }
 
 const TableEditor: React.FC<TableEditorProps> = ({ 
   data, 
   columns, 
   onChange, 
-  readOnly = false 
+  readOnly = false,
+  selectedRowIndex,
+  onRowSelect,
+  showRowSelection = false
 }) => {
   const handleCellEdit = (rowIndex: number, columnId: string, value: string | number) => {
     const newRows = [...data.rows];
@@ -65,6 +72,11 @@ const TableEditor: React.FC<TableEditorProps> = ({
         <Table>
           <TableHead style={{ backgroundColor: '#f5f5f5' }}>
             <TableRow>
+              {showRowSelection && (
+                <TableCell style={{ fontWeight: 'bold', width: '50px' }}>
+                  Select
+                </TableCell>
+              )}
               {columns.map(col => (
                 <TableCell 
                   key={col.id} 
@@ -82,7 +94,23 @@ const TableEditor: React.FC<TableEditorProps> = ({
           </TableHead>
           <TableBody>
             {data.rows.map((row, rowIndex) => (
-              <TableRow key={rowIndex} hover>
+              <TableRow 
+                key={rowIndex} 
+                hover
+                style={{
+                  backgroundColor: selectedRowIndex === rowIndex ? '#e3f2fd' : 'transparent'
+                }}
+              >
+                {showRowSelection && (
+                  <TableCell>
+                    <Radio
+                      checked={selectedRowIndex === rowIndex}
+                      onChange={() => onRowSelect?.(rowIndex)}
+                      size="small"
+                      color="primary"
+                    />
+                  </TableCell>
+                )}
                 {columns.map(col => (
                   <TableCell key={col.id}>
                     {readOnly ? (
@@ -130,7 +158,7 @@ const TableEditor: React.FC<TableEditorProps> = ({
             {data.rows.length === 0 && (
               <TableRow>
                 <TableCell 
-                  colSpan={columns.length + (readOnly ? 0 : 1)} 
+                  colSpan={columns.length + (readOnly ? 0 : 1) + (showRowSelection ? 1 : 0)} 
                   align="center"
                   style={{ padding: '2rem', color: '#999' }}
                 >

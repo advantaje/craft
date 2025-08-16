@@ -1,12 +1,53 @@
 import { useState, useCallback } from 'react';
 import { DocumentSection, SectionData } from '../types/document.types';
+import { getSectionDefaultGuidelines, SectionGuidelines } from '../config/defaultGuidelines';
 
 const DEFAULT_SECTIONS: DocumentSection[] = [
-  { id: '1', name: 'Background', type: 'background', templateTag: 'background', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
-  { id: '2', name: 'Product', type: 'conclusion', templateTag: 'product', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
-  { id: '3', name: 'Usage', type: 'usage', templateTag: 'usage', data: { notes: '', outline: '', draft: '', reviewNotes: '' }, isCompleted: false },
-  { id: '4', name: 'Model Limitations', type: 'model_limitations', templateTag: 'model_limitations', data: { notes: '', outline: '', draft: '{"rows":[]}', reviewNotes: '' }, isCompleted: false },
-  { id: '5', name: 'Model Risk Issues', type: 'model_risk_issues', templateTag: 'model_risk_issues', data: { notes: '', outline: '', draft: '{"rows":[]}', reviewNotes: '' }, isCompleted: false }
+  { 
+    id: '1', 
+    name: 'Background', 
+    type: 'background', 
+    templateTag: 'background', 
+    guidelines: getSectionDefaultGuidelines('background'),
+    data: { notes: '', outline: '', draft: '', reviewNotes: '' }, 
+    isCompleted: false 
+  },
+  { 
+    id: '2', 
+    name: 'Product', 
+    type: 'product', 
+    templateTag: 'product', 
+    guidelines: getSectionDefaultGuidelines('product'),
+    data: { notes: '', outline: '', draft: '', reviewNotes: '' }, 
+    isCompleted: false 
+  },
+  { 
+    id: '3', 
+    name: 'Usage', 
+    type: 'usage', 
+    templateTag: 'usage', 
+    guidelines: getSectionDefaultGuidelines('usage'),
+    data: { notes: '', outline: '', draft: '', reviewNotes: '' }, 
+    isCompleted: false 
+  },
+  { 
+    id: '4', 
+    name: 'Model Limitations', 
+    type: 'model_limitations', 
+    templateTag: 'model_limitations', 
+    guidelines: getSectionDefaultGuidelines('model_limitations'),
+    data: { notes: '', outline: '', draft: '{"rows":[]}', reviewNotes: '' }, 
+    isCompleted: false 
+  },
+  { 
+    id: '5', 
+    name: 'Model Risk Issues', 
+    type: 'model_risk_issues', 
+    templateTag: 'model_risk_issues', 
+    guidelines: getSectionDefaultGuidelines('model_risk_issues'),
+    data: { notes: '', outline: '', draft: '{"rows":[]}', reviewNotes: '' }, 
+    isCompleted: false 
+  }
 ];
 
 export function useDocumentSections() {
@@ -68,6 +109,7 @@ export function useDocumentSections() {
       name: name.trim(),
       type: 'custom', // Custom sections use generic prompts
       templateTag: templateTag?.trim() || undefined,
+      guidelines: getSectionDefaultGuidelines('default'), // Use default guidelines for new sections
       data: { notes: '', outline: '', draft: '', reviewNotes: '' },
       isCompleted: false
     };
@@ -97,6 +139,16 @@ export function useDocumentSections() {
     );
   }, []);
 
+  const updateSectionGuidelines = useCallback((sectionId: string, guidelines: SectionGuidelines) => {
+    setSections(prevSections =>
+      prevSections.map(section =>
+        section.id === sectionId
+          ? { ...section, guidelines }
+          : section
+      )
+    );
+  }, []);
+
   const getSectionById = useCallback((sectionId: string) => {
     return sections.find(section => section.id === sectionId);
   }, [sections]);
@@ -105,6 +157,7 @@ export function useDocumentSections() {
     sections,
     updateSectionData,
     updateSectionTemplateTag,
+    updateSectionGuidelines,
     toggleSectionCompletion,
     addSection,
     removeSection,

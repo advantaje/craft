@@ -59,6 +59,7 @@ const Craft: React.FC = () => {
     sections,
     updateSectionData,
     updateSectionTemplateTag,
+    updateSectionGuidelines,
     toggleSectionCompletion,
     addSection,
     removeSection,
@@ -326,6 +327,7 @@ const Craft: React.FC = () => {
                   onSectionUpdate={handleSectionUpdate}
                   onToggleCompletion={toggleSectionCompletion}
                   onTemplateTagUpdate={updateSectionTemplateTag}
+                  onGuidelinesUpdate={updateSectionGuidelines}
                 />
               ) : (
                 <SectionWorkflow
@@ -333,6 +335,7 @@ const Craft: React.FC = () => {
                   onSectionUpdate={handleSectionUpdate}
                   onToggleCompletion={toggleSectionCompletion}
                   onTemplateTagUpdate={updateSectionTemplateTag}
+                  onGuidelinesUpdate={updateSectionGuidelines}
                 />
               )}
             </TabPanel>

@@ -108,10 +108,11 @@ class GenerateOutlineHandler(BaseHandler):
             notes = body.get('notes', '')
             section_name = body.get('sectionName', 'Section')
             section_type = body.get('sectionType', 'default')
+            guidelines = body.get('guidelines', None)
             
             # Use generation service with section context
             outline = self.generation_service.generate_outline_from_notes(
-                notes, section_name, section_type
+                notes, section_name, section_type, guidelines
             )
             
             response = {"result": outline}
@@ -134,10 +135,11 @@ class GenerateDraftFromOutlineHandler(BaseHandler):
             outline = body.get('outline', '')
             section_name = body.get('sectionName', 'Section')
             section_type = body.get('sectionType', 'default')
+            guidelines = body.get('guidelines', None)
             
             # Use generation service with section context
             draft = self.generation_service.generate_draft_from_outline(
-                notes, outline, section_name, section_type
+                notes, outline, section_name, section_type, guidelines
             )
             
             response = {"result": draft}
@@ -160,10 +162,11 @@ class GenerateDraftFromReviewHandler(BaseHandler):
             review_notes = body.get('reviewNotes', '')
             section_name = body.get('sectionName', 'Section')
             section_type = body.get('sectionType', 'default')
+            guidelines = body.get('guidelines', None)
             
             # Use generation service with section context
             updated_draft = self.generation_service.apply_review_notes(
-                draft, review_notes, section_name, section_type
+                draft, review_notes, section_name, section_type, guidelines
             )
             
             response = {"result": updated_draft}
@@ -185,10 +188,11 @@ class GenerateDraftFromNotesHandler(BaseHandler):
             notes = body.get('notes', '')
             section_name = body.get('sectionName', 'Section')
             section_type = body.get('sectionType', 'default')
+            guidelines = body.get('guidelines', None)
             
             # Use combined generation service method
             draft = self.generation_service.generate_draft_from_notes(
-                notes, section_name, section_type
+                notes, section_name, section_type, guidelines
             )
             
             response = {"result": draft}
@@ -211,10 +215,46 @@ class GenerateDraftFromReviewWithDiffHandler(BaseHandler):
             review_notes = body.get('reviewNotes', '')
             section_name = body.get('sectionName', 'Section')
             section_type = body.get('sectionType', 'default')
+            guidelines = body.get('guidelines', None)
             
             # Use enhanced generation service method with diff computation
             result = self.generation_service.apply_review_notes_with_diff(
-                draft, review_notes, section_name, section_type
+                draft, review_notes, section_name, section_type, guidelines
+            )
+            
+            # Check for errors
+            if "error" in result:
+                self.set_status(500)
+                self.write(json.dumps({"error": result["error"]}))
+                return
+            
+            response = {"result": result}
+            self.set_header("Content-Type", "application/json")
+            self.write(json.dumps(response))
+        except Exception as e:
+            self.set_status(500)
+            self.write(json.dumps({"error": str(e)}))
+
+
+class GenerateRowReviewWithDiffHandler(BaseHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.generation_service = GenerationService()
+
+    def post(self):
+        try:
+            body = json.loads(self.request.body)
+            row_data = body.get('rowData', {})
+            row_index = body.get('rowIndex', 0)
+            review_notes = body.get('reviewNotes', '')
+            columns = body.get('columns', [])
+            section_name = body.get('sectionName', 'Row')
+            section_type = body.get('sectionType', None)
+            guidelines = body.get('guidelines', None)
+            
+            # Use row review service method
+            result = self.generation_service.review_table_row_with_diff(
+                row_data, review_notes, columns, section_name, section_type, guidelines
             )
             
             # Check for errors
@@ -242,10 +282,11 @@ class GenerateReviewHandler(BaseHandler):
             draft = body.get('draft', '')
             section_name = body.get('sectionName', 'Section')
             section_type = body.get('sectionType', 'default')
+            guidelines = body.get('guidelines', None)
             
             # Use generation service with section context
             review = self.generation_service.generate_review_suggestions(
-                draft, section_name, section_type
+                draft, section_name, section_type, guidelines
             )
             
             response = {"result": review}
@@ -359,6 +400,7 @@ def make_app():
         (r"/api/generate-draft-from-notes", GenerateDraftFromNotesHandler),
         (r"/api/generate-draft-from-review", GenerateDraftFromReviewHandler),
         (r"/api/generate-draft-from-review-with-diff", GenerateDraftFromReviewWithDiffHandler),
+        (r"/api/generate-row-review-with-diff", GenerateRowReviewWithDiffHandler),
         (r"/api/generate-review", GenerateReviewHandler),
         (r"/api/generate-document", GenerateDocumentHandler),
         (r"/api/upload-template", UploadTemplateHandler),

@@ -121,7 +121,7 @@ export async function generateOutline(request: GenerateOutlineRequest): Promise<
 
 #### Standard Sections (Text-based)
 - **Background**: Historical context and previous work
-- **Product**: Conclusions and recommendations  
+- **Product**: products and recommendations  
 - **Usage**: Implementation instructions
 - **Custom**: User-defined sections
 
