@@ -19,7 +19,6 @@ import {
 import { 
   Refresh as RefreshIcon, 
   Check as CheckIcon, 
-  Warning as WarningIcon, 
   Block as BlockIcon,
   Settings as SettingsIcon 
 } from '@material-ui/icons';
@@ -221,7 +220,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
             size="small"
             variant="outlined"
             placeholder="e.g., background, product, usage"
-            helperText="Template placeholder name for Word document"
+            helperText="Template tag for Word document"
             style={{ width: '300px', marginBottom: '8px' }}
           />
         </Box>

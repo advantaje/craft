@@ -41,7 +41,7 @@ const TableRenderer: React.FC<TableRendererProps> = ({ content, title, columns }
             <Typography variant="h5">Final Document: {title}</Typography>
           </Box>
         }
-        subheader="Completed table ready for use"
+        subheader="Completed and ready for use"
         style={{ backgroundColor: '#f5f5f5' }}
       />
       <CardContent style={{ padding: '2rem' }}>

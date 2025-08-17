@@ -207,7 +207,7 @@ const DocumentSetup: React.FC<DocumentSetupProps> = ({
           title={
             <Box display="flex" alignItems="center">
               <TemplateIcon color="primary" style={{ marginRight: '0.5rem' }} />
-              <Typography variant="h6">Word Template Selection</Typography>
+              <Typography variant="h5">Word Template Selection</Typography>
             </Box>
           }
           subheader="Choose the Word template for document generation"

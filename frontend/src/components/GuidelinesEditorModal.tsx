@@ -9,8 +9,7 @@ import {
   TextField,
   Box,
   Tabs,
-  Tab,
-  Divider
+  Tab
 } from '@material-ui/core';
 import { Save as SaveIcon, Close as CloseIcon, Restore as RestoreIcon } from '@material-ui/icons';
 import { SectionGuidelines } from '../config/defaultGuidelines';

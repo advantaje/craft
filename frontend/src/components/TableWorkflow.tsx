@@ -14,14 +14,12 @@ import {
   Step,
   StepLabel,
   Chip,
-  Paper,
   IconButton,
   Tooltip
 } from '@material-ui/core';
 import { 
   Refresh as RefreshIcon, 
   Check as CheckIcon, 
-  Warning as WarningIcon, 
   Block as BlockIcon,
   Settings as SettingsIcon 
 } from '@material-ui/icons';
@@ -351,7 +349,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
             size="small"
             variant="outlined"
             placeholder="e.g., model_limitations, model_risk_issues"
-            helperText="Template placeholder name for Word document"
+            helperText="Template tag for Word document"
             style={{ width: '300px', marginBottom: '8px' }}
           />
         </Box>

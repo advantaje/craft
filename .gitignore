@@ -126,3 +126,4 @@ Thumbs.db
 .claude/settings.local.json
 backend/services/openai_tools.py
 frontend/package-lock.json
+backend/template-tagged.docx
