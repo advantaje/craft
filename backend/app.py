@@ -192,6 +192,39 @@ class GenerateRowFromReviewWithDiffHandler(BaseHandler):
             self.write(json.dumps({"error": str(e)}))
 
 
+class GenerateTableFromReviewWithDiffHandler(BaseHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.generation_service = GenerationService()
+
+    def post(self):
+        try:
+            body = json.loads(self.request.body)
+            draft = body.get('draft', '')
+            review_notes = body.get('reviewNotes', '')
+            section_name = body.get('sectionName', 'Table')
+            section_type = body.get('sectionType', None)
+            guidelines = body.get('guidelines', None)
+            
+            # Use table review service method
+            result = self.generation_service.review_table_with_diff(
+                draft, review_notes, section_name, section_type, guidelines
+            )
+            
+            # Check for errors
+            if "error" in result:
+                self.set_status(500)
+                self.write(json.dumps({"error": result["error"]}))
+                return
+            
+            response = {"result": result}
+            self.set_header("Content-Type", "application/json")
+            self.write(json.dumps(response))
+        except Exception as e:
+            self.set_status(500)
+            self.write(json.dumps({"error": str(e)}))
+
+
 class GenerateReviewHandler(BaseHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -319,6 +352,7 @@ def make_app():
         (r"/api/generate-draft-from-notes", GenerateDraftFromNotesHandler),
         (r"/api/generate-draft-from-review-with-diff", GenerateDraftFromReviewWithDiffHandler),
         (r"/api/generate-row-from-review-with-diff", GenerateRowFromReviewWithDiffHandler),
+        (r"/api/generate-table-from-review-with-diff", GenerateTableFromReviewWithDiffHandler),
         (r"/api/generate-review", GenerateReviewHandler),
         (r"/api/generate-document", GenerateDocumentHandler),
         (r"/api/upload-template", UploadTemplateHandler),

@@ -6,6 +6,7 @@ import json
 from services.openai_tools import create_azure_openai_client
 from prompts.section_prompts import SectionPrompts
 from services.diff_service import DocumentDiffService
+from services.json_schema_service import JsonSchemaService
 
 
 class GenerationService:
@@ -41,12 +42,12 @@ class GenerationService:
                 prompt = self.prompts.get_prompt(operation, section_type, section_name, guidelines, **prompt_kwargs)
             
             # Determine content type and system prompt
-            is_table_section = section_type in ['model_limitations', 'model_risk_issues']
+            is_table_section = JsonSchemaService.is_table_section(section_type)
             requires_json = is_table_section and operation in ['draft', 'revision']
             
             if requires_json:
                 system_prompt = self.SYSTEM_PROMPTS['json']
-                response_format = {"type": "json_object"}
+                response_format = JsonSchemaService.get_structured_output_format(section_type)
                 max_tokens = 2500
             elif operation == 'review':
                 system_prompt = self.SYSTEM_PROMPTS['review']
@@ -213,7 +214,7 @@ IMPORTANT: Return the improved table data in the EXACT same JSON format with the
             # Generate improved row using JSON format
             # We need to ensure JSON response format for table data
             
-            # Make direct API call with JSON response format
+            # Make direct API call with structured output format
             system_prompt = "You are an expert at improving table data based on feedback. Always return valid JSON in the exact format requested."
             
             response = self.client.chat.completions.create(
@@ -224,7 +225,7 @@ IMPORTANT: Return the improved table data in the EXACT same JSON format with the
                 ],
                 temperature=0.7,
                 max_tokens=1000,
-                response_format={"type": "json_object"}
+                response_format=JsonSchemaService.get_structured_output_format(section_type, "row_update")
             )
             
             improved_json_text = response.choices[0].message.content.strip()
@@ -233,16 +234,9 @@ IMPORTANT: Return the improved table data in the EXACT same JSON format with the
                 return {"error": improved_json_text}
             
             # Parse JSON response and extract the first (and only) row
-            try:
-                improved_table = json.loads(improved_json_text)
-                if 'rows' in improved_table and len(improved_table['rows']) > 0:
-                    improved_row = improved_table['rows'][0]
-                else:
-                    # Fallback to original parsing if JSON structure is unexpected
-                    improved_row = self.parse_llm_response_to_row(improved_json_text, row_data, columns)
-            except json.JSONDecodeError:
-                # Fallback to original parsing method if not valid JSON
-                improved_row = self.parse_llm_response_to_row(improved_json_text, row_data, columns)
+            # Structured outputs guarantee valid JSON, so no need for fallbacks
+            improved_table = json.loads(improved_json_text)
+            improved_row = improved_table['rows'][0]
             
             # Compute diff between original and improved row using formatted JSON
             field_order = self.FIELD_ORDER_MAPPING.get(section_type, None) if section_type else None
@@ -264,60 +258,83 @@ IMPORTANT: Return the improved table data in the EXACT same JSON format with the
             print(f"Error reviewing table row: {e}")
             return {"error": f"Error reviewing table row: {str(e)}. Please check your API configuration."}
     
-    def format_row_for_llm(self, row_data: dict, columns: list) -> str:
-        """Convert row data to human-readable format for LLM"""
-        formatted_fields = []
-        for col in columns:
-            col_id = col.get('id', '')
-            col_label = col.get('label', col_id)
-            value = row_data.get(col_id, '')
-            formatted_fields.append(f"{col_label}: {value}")
-        return "\n".join(formatted_fields)
+    def review_table_with_diff(self, table_data: str, review_notes: str, section_name: str, section_type: str = None, guidelines: str = None) -> dict:
+        """Review entire table and return updated table with diff data"""
+        if not table_data:
+            return {"error": "Please provide table data to review."}
+        if not review_notes.strip():
+            return {"error": "Please provide review notes to apply."}
+        
+        try:
+            # Parse table data to ensure it's valid JSON
+            import json
+            try:
+                parsed_table = json.loads(table_data)
+                if 'rows' not in parsed_table or not isinstance(parsed_table['rows'], list):
+                    return {"error": "Invalid table format. Expected JSON with 'rows' array."}
+            except json.JSONDecodeError:
+                return {"error": "Invalid JSON format for table data."}
+            
+            # Format table for LLM prompt
+            table_json = json.dumps(parsed_table, indent=2)
+            
+            # Create focused prompt for table review
+            prompt = f"""
+Review and improve this entire table based on the feedback provided.
+
+Current table data:
+{table_json}
+
+Feedback to apply to ALL rows:
+{review_notes}
+
+IMPORTANT: Return the improved table data in the EXACT same JSON format with all rows updated based on the feedback. Apply the feedback consistently across all rows where applicable."""
+            
+            # Add guidelines if provided
+            if guidelines and guidelines.strip():
+                prompt += f"\n\nGuidelines for reviewing:\n{guidelines.strip()}"
+            
+            # Make API call with structured output format
+            system_prompt = "You are an expert at improving table data based on feedback. Always return valid JSON in the exact format requested."
+            
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=2000,
+                response_format=JsonSchemaService.get_structured_output_format(section_type, "table_update")
+            )
+            
+            improved_json_text = response.choices[0].message.content.strip()
+            
+            if improved_json_text.startswith("Error"):
+                return {"error": improved_json_text}
+            
+            # Parse JSON response - structured outputs guarantee valid JSON
+            improved_table = json.loads(improved_json_text)
+            
+            # Format both JSON strings for proper diff computation
+            formatted_original = json.dumps(json.loads(table_data), indent=2)
+            formatted_improved = json.dumps(improved_table, indent=2)
+            
+            # Compute diff between formatted JSON strings
+            diff_segments = self.diff_service.compute_document_diff(formatted_original, formatted_improved)
+            diff_summary = self.diff_service.compute_diff_summary(diff_segments)
+            
+            return {
+                "new_draft": formatted_improved,
+                "diff_segments": diff_segments,
+                "diff_summary": diff_summary
+            }
+            
+        except Exception as e:
+            print(f"Error reviewing table: {e}")
+            return {"error": f"Error reviewing table: {str(e)}. Please check your API configuration."}
     
-    def parse_llm_response_to_row(self, response_text: str, original_row: dict, columns: list) -> dict:
-        """Parse LLM response back to row format"""
-        improved_row = original_row.copy()
-        
-        # Clean up the response text
-        response_text = response_text.strip()
-        
-        # Try to extract field values from the response
-        lines = response_text.split('\n')
-        for line in lines:
-            line = line.strip()
-            if ':' in line and line:
-                parts = line.split(':', 1)
-                if len(parts) == 2:
-                    field_name = parts[0].strip()
-                    field_value = parts[1].strip()
-                    
-                    # Remove common prefixes and suffixes
-                    field_value = field_value.strip('"\'')
-                    
-                    # Find matching column (try both label and id)
-                    for col in columns:
-                        col_label = col.get('label', '').lower()
-                        col_id = col.get('id', '').lower()
-                        field_name_lower = field_name.lower()
-                        
-                        if (col_label == field_name_lower or 
-                            col_id == field_name_lower or
-                            field_name_lower.endswith(col_label) or
-                            field_name_lower.endswith(col_id)):
-                            
-                            col_id_actual = col.get('id')
-                            if col_id_actual:
-                                # Convert to appropriate type
-                                if col.get('type') == 'number' and field_value:
-                                    try:
-                                        improved_row[col_id_actual] = float(field_value) if '.' in field_value else int(field_value)
-                                    except ValueError:
-                                        improved_row[col_id_actual] = field_value
-                                else:
-                                    improved_row[col_id_actual] = field_value
-                            break
-        
-        return improved_row
+    
     
     def _format_json_with_order(self, data: dict, field_order: list = None, is_table: bool = False) -> str:
         """
@@ -389,7 +406,7 @@ IMPORTANT: Return the improved table data in the EXACT same JSON format with the
         formatted_new = None
         
         # For table sections, format JSON before computing diff
-        if section_type in ['model_limitations', 'model_risk_issues']:
+        if JsonSchemaService.is_table_section(section_type):
             try:
                 import json
                 original_parsed = json.loads(original)

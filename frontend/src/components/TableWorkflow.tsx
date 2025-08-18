@@ -28,7 +28,8 @@ import { TableConfiguration } from '../config/tableConfigurations';
 import { 
   generateDraftFromNotes, 
   generateReview,
-  generateRowFromReviewWithDiff 
+  generateRowFromReviewWithDiff,
+  generateTableFromReviewWithDiff 
 } from '../services/api.service';
 import TableEditor from './TableEditor';
 import TableRenderer from './TableRenderer';
@@ -208,6 +209,33 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
       console.error('Error applying row review:', error);
     } finally {
       setLoadingState('apply-review', false);
+    }
+  };
+
+  const handleApplyReviewToAllRows = async () => {
+    if (!section.data.draft.trim() || !section.data.reviewNotes.trim()) return;
+    
+    setLoadingState('apply-all-rows', true);
+    try {
+      const result = await generateTableFromReviewWithDiff({
+        draft: section.data.draft,
+        reviewNotes: section.data.reviewNotes,
+        sectionName: section.name,
+        sectionType: tableConfig.sectionType,
+        guidelines: section.guidelines?.revision
+      });
+      
+      // Open comparison dialog for full table with diff data
+      setComparisonDialog({
+        open: true,
+        proposedDraft: result.new_draft,
+        diffSegments: result.diff_segments,
+        diffSummary: result.diff_summary
+      });
+    } catch (error) {
+      console.error('Error applying review to all rows:', error);
+    } finally {
+      setLoadingState('apply-all-rows', false);
     }
   };
 
@@ -451,25 +479,44 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
                 <Grid item xs={12}>
                   <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                     <Typography variant="h6">Review & Feedback</Typography>
-                    <Button
-                      variant="contained"
-                      color="secondary"
-                      onClick={handleApplyRowReview}
-                      disabled={!section.data.draft.trim() || !section.data.reviewNotes.trim() || selectedRowIndex === null || loading['apply-review']}
-                      startIcon={<RefreshIcon />}
-                      size="small"
-                    >
-                      {loading['apply-review'] ? (
-                        <>
-                          <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
-                          Updating...
-                        </>
-                      ) : selectedRowIndex !== null ? (
-                        `← Apply to Row #${selectedRowIndex + 1}`
-                      ) : (
-                        '← Apply Review to Row'
-                      )}
-                    </Button>
+                    <Box display="flex" style={{ gap: '8px' }}>
+                      <Button
+                        variant="contained"
+                        color="secondary"
+                        onClick={handleApplyRowReview}
+                        disabled={!section.data.draft.trim() || !section.data.reviewNotes.trim() || selectedRowIndex === null || loading['apply-review']}
+                        startIcon={<RefreshIcon />}
+                        size="small"
+                      >
+                        {loading['apply-review'] ? (
+                          <>
+                            <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
+                            Updating...
+                          </>
+                        ) : selectedRowIndex !== null ? (
+                          `← Apply to Row #${selectedRowIndex + 1}`
+                        ) : (
+                          '← Apply Review to Row'
+                        )}
+                      </Button>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleApplyReviewToAllRows}
+                        disabled={!section.data.draft.trim() || !section.data.reviewNotes.trim() || loading['apply-all-rows']}
+                        startIcon={<RefreshIcon />}
+                        size="small"
+                      >
+                        {loading['apply-all-rows'] ? (
+                          <>
+                            <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
+                            Updating All...
+                          </>
+                        ) : (
+                          '← Apply to All Rows'
+                        )}
+                      </Button>
+                    </Box>
                   </Box>
                   <TextField
                     fullWidth

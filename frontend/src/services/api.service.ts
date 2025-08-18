@@ -59,6 +59,11 @@ export async function generateRowFromReviewWithDiff(request: GenerateRowReviewRe
   return response.data.result;
 }
 
+export async function generateTableFromReviewWithDiff(request: GenerateDraftFromReviewRequest): Promise<GenerateDraftFromReviewWithDiffResponse> {
+  const response = await axiosInstance.post<ApiResponse<GenerateDraftFromReviewWithDiffResponse>>('/api/generate-table-from-review-with-diff', request);
+  return response.data.result;
+}
+
 export async function generateDocument(request: GenerateDocumentRequest): Promise<GenerateDocumentResponse> {
   try {
     const response = await axiosInstance.post<Blob>('/api/generate-document', request, {
