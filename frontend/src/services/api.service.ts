@@ -43,10 +43,6 @@ export async function generateReview(request: GenerateReviewRequest): Promise<st
   return response.data.result;
 }
 
-export async function generateDraftFromReview(request: GenerateDraftFromReviewRequest): Promise<string> {
-  const response = await axiosInstance.post<ApiResponse<string>>('/api/generate-draft-from-review', request);
-  return response.data.result;
-}
 
 export async function generateDraftFromNotes(request: GenerateDraftFromNotesRequest): Promise<string> {
   const response = await axiosInstance.post<ApiResponse<string>>('/api/generate-draft-from-notes', request);
@@ -58,8 +54,8 @@ export async function generateDraftFromReviewWithDiff(request: GenerateDraftFrom
   return response.data.result;
 }
 
-export async function generateRowReviewWithDiff(request: GenerateRowReviewRequest): Promise<GenerateRowReviewResponse> {
-  const response = await axiosInstance.post<ApiResponse<GenerateRowReviewResponse>>('/api/generate-row-review-with-diff', request);
+export async function generateRowFromReviewWithDiff(request: GenerateRowReviewRequest): Promise<GenerateRowReviewResponse> {
+  const response = await axiosInstance.post<ApiResponse<GenerateRowReviewResponse>>('/api/generate-row-from-review-with-diff', request);
   return response.data.result;
 }
 

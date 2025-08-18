@@ -27,10 +27,8 @@ import { DocumentSection, SectionData, TableData, DiffSegment, DiffSummary } fro
 import { TableConfiguration } from '../config/tableConfigurations';
 import { 
   generateDraftFromNotes, 
-  generateReview, 
-  generateDraftFromReview,
-  generateDraftFromReviewWithDiff,
-  generateRowReviewWithDiff 
+  generateReview,
+  generateRowFromReviewWithDiff 
 } from '../services/api.service';
 import TableEditor from './TableEditor';
 import TableRenderer from './TableRenderer';
@@ -121,10 +119,19 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
     setLoading(prev => ({ ...prev, [operation]: state }));
   };
 
+  const formatRowForReview = (rowData: any, rowIndex: number): string => {
+    const formattedFields = tableConfig.columns.map(col => {
+      const value = rowData[col.id] || '';
+      return `${col.label}: ${value}`;
+    }).join('\n');
+    
+    return `Row #${rowIndex + 1}:\n${formattedFields}`;
+  };
+
   const handleGenerateTableFromNotes = async () => {
     if (!section.data.notes.trim()) return;
     
-    setLoadingState('table-notes', true);
+    setLoadingState('notes', true);
     try {
       const result = await generateDraftFromNotes({ 
         notes: section.data.notes,
@@ -136,26 +143,28 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
     } catch (error) {
       console.error('Error generating table data:', error);
     } finally {
-      setLoadingState('table-notes', false);
+      setLoadingState('notes', false);
     }
   };
 
 
   const handleGenerateReview = async () => {
-    if (!section.data.draft.trim()) return;
+    // Require row selection for table reviews
+    if (!section.data.draft.trim() || selectedRowIndex === null) return;
     
-    // If a row is selected, do row-specific review
-    if (selectedRowIndex !== null) {
-      await handleGenerateRowReview();
-      return;
-    }
+    const tableData = parseTableData(section.data.draft);
+    const rowData = tableData.rows[selectedRowIndex];
     
-    // Otherwise, do full table review
-    setLoadingState('review', true);
+    if (!rowData) return;
+    
+    setLoadingState('generate-review', true);
     try {
+      // Format the selected row for review
+      const formattedRowData = formatRowForReview(rowData, selectedRowIndex);
+      
       const result = await generateReview({ 
-        draft: section.data.draft,
-        sectionName: section.name,
+        draft: formattedRowData,
+        sectionName: `${section.name} - Row #${selectedRowIndex + 1}`,
         sectionType: tableConfig.sectionType,
         guidelines: section.guidelines?.review
       });
@@ -163,11 +172,11 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
     } catch (error) {
       console.error('Error generating review:', error);
     } finally {
-      setLoadingState('review', false);
+      setLoadingState('generate-review', false);
     }
   };
 
-  const handleGenerateRowReview = async () => {
+  const handleApplyRowReview = async () => {
     if (selectedRowIndex === null || !section.data.reviewNotes.trim()) return;
     
     const tableData = parseTableData(section.data.draft);
@@ -175,9 +184,9 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
     
     if (!rowData) return;
     
-    setLoadingState('review', true);
+    setLoadingState('apply-review', true);
     try {
-      const result = await generateRowReviewWithDiff({
+      const result = await generateRowFromReviewWithDiff({
         rowData,
         rowIndex: selectedRowIndex,
         reviewNotes: section.data.reviewNotes,
@@ -196,59 +205,12 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
         diffSummary: result.diff_summary
       });
     } catch (error) {
-      console.error('Error generating row review:', error);
+      console.error('Error applying row review:', error);
     } finally {
-      setLoadingState('review', false);
+      setLoadingState('apply-review', false);
     }
   };
 
-  const handleGenerateDraftFromReview = async () => {
-    if (!section.data.draft.trim() || !section.data.reviewNotes.trim()) return;
-    
-    setLoadingState('draft-review', true);
-    try {
-      // Try to use the enhanced API with diff support
-      const result = await generateDraftFromReviewWithDiff({
-        draft: section.data.draft,
-        reviewNotes: section.data.reviewNotes,
-        sectionName: section.name,
-        sectionType: tableConfig.sectionType,
-        guidelines: section.guidelines?.revision
-      });
-      
-      // Open comparison dialog with diff data
-      setComparisonDialog({
-        open: true,
-        proposedDraft: result.new_formatted || result.new_draft,
-        diffSegments: result.diff_segments,
-        diffSummary: result.diff_summary
-      });
-    } catch (error) {
-      console.error('Error revising draft with diff:', error);
-      
-      // Fallback to original API without diff
-      try {
-        const fallbackResult = await generateDraftFromReview({
-          draft: section.data.draft,
-          reviewNotes: section.data.reviewNotes,
-          sectionName: section.name,
-          sectionType: tableConfig.sectionType,
-          guidelines: section.guidelines?.revision
-        });
-        
-        setComparisonDialog({
-          open: true,
-          proposedDraft: fallbackResult,
-          diffSegments: undefined,
-          diffSummary: undefined
-        });
-      } catch (fallbackError) {
-        console.error('Error with fallback API:', fallbackError);
-      }
-    } finally {
-      setLoadingState('draft-review', false);
-    }
-  };
 
   const handleAcceptChanges = () => {
     onSectionUpdate(section.id, 'draft', comparisonDialog.proposedDraft);
@@ -414,10 +376,10 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
                   variant="contained"
                   color="primary"
                   onClick={handleGenerateTableFromNotes}
-                  disabled={!section.data.notes.trim() || loading['table-notes']}
+                  disabled={!section.data.notes.trim() || loading['notes']}
                   size="small"
                 >
-                  {loading['table-notes'] ? (
+                  {loading['notes'] ? (
                     <>
                       <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
                       Generating...
@@ -455,10 +417,10 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
                       variant="outlined"
                       color="primary"
                       onClick={handleGenerateReview}
-                      disabled={!section.data.draft.trim() || loading.review}
+                      disabled={!section.data.draft.trim() || selectedRowIndex === null || loading['generate-review']}
                       size="small"
                     >
-                      {loading.review ? (
+                      {loading['generate-review'] ? (
                         <>
                           <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
                           Analyzing...
@@ -466,7 +428,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
                       ) : selectedRowIndex !== null ? (
                         `Review Row #${selectedRowIndex + 1} →`
                       ) : (
-                        'Generate Review →'
+                        'Select Row to Review →'
                       )}
                     </Button>
                   </Box>
@@ -492,18 +454,20 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
                     <Button
                       variant="contained"
                       color="secondary"
-                      onClick={handleGenerateDraftFromReview}
-                      disabled={!section.data.draft.trim() || !section.data.reviewNotes.trim() || loading['draft-review']}
+                      onClick={handleApplyRowReview}
+                      disabled={!section.data.draft.trim() || !section.data.reviewNotes.trim() || selectedRowIndex === null || loading['apply-review']}
                       startIcon={<RefreshIcon />}
                       size="small"
                     >
-                      {loading['draft-review'] ? (
+                      {loading['apply-review'] ? (
                         <>
                           <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
                           Updating...
                         </>
+                      ) : selectedRowIndex !== null ? (
+                        `← Apply to Row #${selectedRowIndex + 1}`
                       ) : (
-                        '← Apply & Update Table'
+                        '← Apply Review to Row'
                       )}
                     </Button>
                   </Box>

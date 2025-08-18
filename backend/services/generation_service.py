@@ -2,6 +2,7 @@
 Document generation service with section-aware processing
 """
 
+import json
 from services.openai_tools import create_azure_openai_client
 from prompts.section_prompts import SectionPrompts
 from services.diff_service import DocumentDiffService
@@ -190,33 +191,58 @@ class GenerationService:
             return {"error": "Please provide review notes to apply."}
         
         try:
-            # Convert row to readable format for LLM
-            row_text = self.format_row_for_llm(row_data, columns)
+            # Format row as a single-row table for consistency with table JSON format
+            table_json = json.dumps({"rows": [row_data]}, indent=2)
             
-            # Create a focused prompt for row review
+            # Create a focused prompt for row review using JSON format
             prompt = f"""
-Review and improve this table row based on the feedback provided.
+Review and improve this table data based on the feedback provided.
 
-Row data:
-{row_text}
+Current table data (single row):
+{table_json}
 
 Feedback to apply:
 {review_notes}
 
-Please return the improved row data in the same format, maintaining the structure but improving the content based on the feedback."""
+IMPORTANT: Return the improved table data in the EXACT same JSON format with the updated row. The table should still contain exactly one row with the improvements applied based on the feedback."""
             
             # Add guidelines if provided
             if guidelines and guidelines.strip():
                 prompt += f"\n\nGuidelines for reviewing:\n{guidelines.strip()}"
             
-            # Generate improved row using unified error handling
-            improved_row_text = self._generate_content('revision', section_type or 'default', section_name, None, prompt_override=prompt)
+            # Generate improved row using JSON format
+            # We need to ensure JSON response format for table data
             
-            if improved_row_text.startswith("Error"):
-                return {"error": improved_row_text}
+            # Make direct API call with JSON response format
+            system_prompt = "You are an expert at improving table data based on feedback. Always return valid JSON in the exact format requested."
             
-            # Parse back to row format
-            improved_row = self.parse_llm_response_to_row(improved_row_text, row_data, columns)
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=1000,
+                response_format={"type": "json_object"}
+            )
+            
+            improved_json_text = response.choices[0].message.content.strip()
+            
+            if improved_json_text.startswith("Error"):
+                return {"error": improved_json_text}
+            
+            # Parse JSON response and extract the first (and only) row
+            try:
+                improved_table = json.loads(improved_json_text)
+                if 'rows' in improved_table and len(improved_table['rows']) > 0:
+                    improved_row = improved_table['rows'][0]
+                else:
+                    # Fallback to original parsing if JSON structure is unexpected
+                    improved_row = self.parse_llm_response_to_row(improved_json_text, row_data, columns)
+            except json.JSONDecodeError:
+                # Fallback to original parsing method if not valid JSON
+                improved_row = self.parse_llm_response_to_row(improved_json_text, row_data, columns)
             
             # Compute diff between original and improved row using formatted JSON
             field_order = self.FIELD_ORDER_MAPPING.get(section_type, None) if section_type else None
@@ -252,28 +278,43 @@ Please return the improved row data in the same format, maintaining the structur
         """Parse LLM response back to row format"""
         improved_row = original_row.copy()
         
+        # Clean up the response text
+        response_text = response_text.strip()
+        
         # Try to extract field values from the response
-        lines = response_text.strip().split('\n')
+        lines = response_text.split('\n')
         for line in lines:
-            if ':' in line:
+            line = line.strip()
+            if ':' in line and line:
                 parts = line.split(':', 1)
                 if len(parts) == 2:
                     field_name = parts[0].strip()
                     field_value = parts[1].strip()
                     
-                    # Find matching column
+                    # Remove common prefixes and suffixes
+                    field_value = field_value.strip('"\'')
+                    
+                    # Find matching column (try both label and id)
                     for col in columns:
-                        if col.get('label', '').lower() == field_name.lower() or col.get('id', '').lower() == field_name.lower():
-                            col_id = col.get('id')
-                            if col_id:
+                        col_label = col.get('label', '').lower()
+                        col_id = col.get('id', '').lower()
+                        field_name_lower = field_name.lower()
+                        
+                        if (col_label == field_name_lower or 
+                            col_id == field_name_lower or
+                            field_name_lower.endswith(col_label) or
+                            field_name_lower.endswith(col_id)):
+                            
+                            col_id_actual = col.get('id')
+                            if col_id_actual:
                                 # Convert to appropriate type
-                                if col.get('type') == 'number':
+                                if col.get('type') == 'number' and field_value:
                                     try:
-                                        improved_row[col_id] = float(field_value) if '.' in field_value else int(field_value)
+                                        improved_row[col_id_actual] = float(field_value) if '.' in field_value else int(field_value)
                                     except ValueError:
-                                        improved_row[col_id] = field_value
+                                        improved_row[col_id_actual] = field_value
                                 else:
-                                    improved_row[col_id] = field_value
+                                    improved_row[col_id_actual] = field_value
                             break
         
         return improved_row

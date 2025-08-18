@@ -97,32 +97,6 @@ class ReviewLookupHandler(BaseHandler):
         return enhanced_data
 
 
-class GenerateDraftFromReviewHandler(BaseHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.generation_service = GenerationService()
-
-    def post(self):
-        try:
-            body = json.loads(self.request.body)
-            draft = body.get('draft', '')
-            review_notes = body.get('reviewNotes', '')
-            section_name = body.get('sectionName', 'Section')
-            section_type = body.get('sectionType', 'default')
-            guidelines = body.get('guidelines', None)
-            
-            # Use generation service with section context
-            updated_draft = self.generation_service.apply_review_notes(
-                draft, review_notes, section_name, section_type, guidelines
-            )
-            
-            response = {"result": updated_draft}
-            self.set_header("Content-Type", "application/json")
-            self.write(json.dumps(response))
-        except Exception as e:
-            self.set_status(500)
-            self.write(json.dumps({"error": str(e)}))
-
 
 class GenerateDraftFromNotesHandler(BaseHandler):
     def __init__(self, *args, **kwargs):
@@ -183,7 +157,7 @@ class GenerateDraftFromReviewWithDiffHandler(BaseHandler):
             self.write(json.dumps({"error": str(e)}))
 
 
-class GenerateRowReviewWithDiffHandler(BaseHandler):
+class GenerateRowFromReviewWithDiffHandler(BaseHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.generation_service = GenerationService()
@@ -343,9 +317,8 @@ def make_app():
         (r"/api/hello", HelloHandler),
         (r"/api/review-lookup", ReviewLookupHandler),
         (r"/api/generate-draft-from-notes", GenerateDraftFromNotesHandler),
-        (r"/api/generate-draft-from-review", GenerateDraftFromReviewHandler),
         (r"/api/generate-draft-from-review-with-diff", GenerateDraftFromReviewWithDiffHandler),
-        (r"/api/generate-row-review-with-diff", GenerateRowReviewWithDiffHandler),
+        (r"/api/generate-row-from-review-with-diff", GenerateRowFromReviewWithDiffHandler),
         (r"/api/generate-review", GenerateReviewHandler),
         (r"/api/generate-document", GenerateDocumentHandler),
         (r"/api/upload-template", UploadTemplateHandler),

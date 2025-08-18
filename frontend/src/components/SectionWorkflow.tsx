@@ -26,7 +26,6 @@ import { DocumentSection, SectionData, DiffSegment, DiffSummary } from '../types
 import { 
   generateDraftFromNotes, 
   generateReview, 
-  generateDraftFromReview,
   generateDraftFromReviewWithDiff 
 } from '../services/api.service';
 import FormattedDocument from './FormattedDocument';
@@ -81,7 +80,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
   const handleGenerateDraftFromNotes = async () => {
     if (!section.data.notes.trim()) return;
     
-    setLoadingState('draft-notes', true);
+    setLoadingState('notes', true);
     try {
       const result = await generateDraftFromNotes({ 
         notes: section.data.notes,
@@ -93,7 +92,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
     } catch (error) {
       console.error('Error generating draft:', error);
     } finally {
-      setLoadingState('draft-notes', false);
+      setLoadingState('notes', false);
     }
   };
 
@@ -101,7 +100,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
   const handleGenerateReview = async () => {
     if (!section.data.draft.trim()) return;
     
-    setLoadingState('review', true);
+    setLoadingState('generate-review', true);
     try {
       const result = await generateReview({ 
         draft: section.data.draft,
@@ -113,16 +112,15 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
     } catch (error) {
       console.error('Error generating review:', error);
     } finally {
-      setLoadingState('review', false);
+      setLoadingState('generate-review', false);
     }
   };
 
   const handleGenerateDraftFromReview = async () => {
     if (!section.data.draft.trim() || !section.data.reviewNotes.trim()) return;
     
-    setLoadingState('draft-review', true);
+    setLoadingState('apply-review', true);
     try {
-      // Try to use the enhanced API with diff support
       const result = await generateDraftFromReviewWithDiff({
         draft: section.data.draft,
         reviewNotes: section.data.reviewNotes,
@@ -140,28 +138,8 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
       });
     } catch (error) {
       console.error('Error revising draft with diff:', error);
-      
-      // Fallback to original API without diff
-      try {
-        const fallbackResult = await generateDraftFromReview({
-          draft: section.data.draft,
-          reviewNotes: section.data.reviewNotes,
-          sectionName: section.name,
-          sectionType: section.type,
-          guidelines: section.guidelines?.revision
-        });
-        
-        setComparisonDialog({
-          open: true,
-          proposedDraft: fallbackResult,
-          diffSegments: undefined,
-          diffSummary: undefined
-        });
-      } catch (fallbackError) {
-        console.error('Error with fallback API:', fallbackError);
-      }
     } finally {
-      setLoadingState('draft-review', false);
+      setLoadingState('apply-review', false);
     }
   };
 
@@ -285,10 +263,10 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
                   variant="contained"
                   color="primary"
                   onClick={handleGenerateDraftFromNotes}
-                  disabled={!section.data.notes.trim() || loading['draft-notes']}
+                  disabled={!section.data.notes.trim() || loading['notes']}
                   size="small"
                 >
-                  {loading['draft-notes'] ? (
+                  {loading['notes'] ? (
                     <>
                       <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
                       Generating...
@@ -326,10 +304,10 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
                       variant="outlined"
                       color="primary"
                       onClick={handleGenerateReview}
-                      disabled={!section.data.draft.trim() || loading.review}
+                      disabled={!section.data.draft.trim() || loading['generate-review']}
                       size="small"
                     >
-                      {loading.review ? (
+                      {loading['generate-review'] ? (
                         <>
                           <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
                           Analyzing...
@@ -359,11 +337,11 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
                       variant="contained"
                       color="secondary"
                       onClick={handleGenerateDraftFromReview}
-                      disabled={!section.data.draft.trim() || !section.data.reviewNotes.trim() || loading['draft-review']}
+                      disabled={!section.data.draft.trim() || !section.data.reviewNotes.trim() || loading['apply-review']}
                       startIcon={<RefreshIcon />}
                       size="small"
                     >
-                      {loading['draft-review'] ? (
+                      {loading['apply-review'] ? (
                         <>
                           <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
                           Revising...
