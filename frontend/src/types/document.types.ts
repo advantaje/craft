@@ -1,6 +1,5 @@
 export interface SectionData {
   notes: string;
-  outline: string;
   draft: string;
   reviewNotes: string;
 }
@@ -11,7 +10,6 @@ export interface DocumentSection {
   type: string;
   templateTag?: string;
   guidelines?: {
-    outline: string;
     draft: string;
     review: string;
     revision: string;
@@ -57,21 +55,6 @@ export interface HelloResponse {
 
 export interface ReviewLookupRequest {
   id: string;
-}
-
-export interface GenerateOutlineRequest {
-  notes: string;
-  sectionName: string;
-  sectionType: string;
-  guidelines?: string;
-}
-
-export interface GenerateDraftFromOutlineRequest {
-  notes: string;
-  outline: string;
-  sectionName: string;
-  sectionType: string;
-  guidelines?: string;
 }
 
 export interface GenerateReviewRequest {

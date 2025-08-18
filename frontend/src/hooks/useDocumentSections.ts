@@ -9,7 +9,7 @@ const DEFAULT_SECTIONS: DocumentSection[] = [
     type: 'background', 
     templateTag: 'background', 
     guidelines: getSectionDefaultGuidelines('background'),
-    data: { notes: '', outline: '', draft: '', reviewNotes: '' }, 
+    data: { notes: '', draft: '', reviewNotes: '' }, 
     isCompleted: false 
   },
   { 
@@ -18,7 +18,7 @@ const DEFAULT_SECTIONS: DocumentSection[] = [
     type: 'product', 
     templateTag: 'product', 
     guidelines: getSectionDefaultGuidelines('product'),
-    data: { notes: '', outline: '', draft: '', reviewNotes: '' }, 
+    data: { notes: '', draft: '', reviewNotes: '' }, 
     isCompleted: false 
   },
   { 
@@ -27,7 +27,7 @@ const DEFAULT_SECTIONS: DocumentSection[] = [
     type: 'usage', 
     templateTag: 'usage', 
     guidelines: getSectionDefaultGuidelines('usage'),
-    data: { notes: '', outline: '', draft: '', reviewNotes: '' }, 
+    data: { notes: '', draft: '', reviewNotes: '' }, 
     isCompleted: false 
   },
   { 
@@ -36,7 +36,7 @@ const DEFAULT_SECTIONS: DocumentSection[] = [
     type: 'model_limitations', 
     templateTag: 'model_limitations', 
     guidelines: getSectionDefaultGuidelines('model_limitations'),
-    data: { notes: '', outline: '', draft: '{"rows":[]}', reviewNotes: '' }, 
+    data: { notes: '', draft: '{"rows":[]}', reviewNotes: '' }, 
     isCompleted: false 
   },
   { 
@@ -45,7 +45,7 @@ const DEFAULT_SECTIONS: DocumentSection[] = [
     type: 'model_risk_issues', 
     templateTag: 'model_risk_issues', 
     guidelines: getSectionDefaultGuidelines('model_risk_issues'),
-    data: { notes: '', outline: '', draft: '{"rows":[]}', reviewNotes: '' }, 
+    data: { notes: '', draft: '{"rows":[]}', reviewNotes: '' }, 
     isCompleted: false 
   }
 ];
@@ -110,7 +110,7 @@ export function useDocumentSections() {
       type: 'custom', // Custom sections use generic prompts
       templateTag: templateTag?.trim() || undefined,
       guidelines: getSectionDefaultGuidelines('default'), // Use default guidelines for new sections
-      data: { notes: '', outline: '', draft: '', reviewNotes: '' },
+      data: { notes: '', draft: '', reviewNotes: '' },
       isCompleted: false
     };
     setSections(prevSections => [...prevSections, newSection]);

@@ -9,6 +9,10 @@ class SectionPrompts:
     BASE_PROMPTS = {
         "outline": """
 Create a structured outline for the {section_name} section based on the following notes.
+This outline will serve as the foundation for drafting the content.
+
+The final content should meet the objectives described in the guidelines below.
+Plan your outline to ensure these goals can be achieved.
 
 Notes: {notes}
 
@@ -67,14 +71,28 @@ Generate the revised content:
         
         # Add guidelines if provided
         if guidelines and guidelines.strip():
-            action_map = {
-                'outline': 'creating the outline',
-                'draft': 'writing the content', 
-                'review': 'providing feedback',
-                'revision': 'revising the content'
-            }
-            action = action_map.get(operation, 'completing this task')
-            base_prompt += f"\n\nGuidelines for {action}:\n{guidelines.strip()}"
+            # For table sections in outline mode, provide cleaner guidance
+            if operation == 'outline' and section_type in cls.TABLE_FORMATS:
+                # Extract the conceptual part of guidelines before JSON formatting
+                guidelines_lines = guidelines.strip().split('\n')
+                conceptual_guidelines = []
+                for line in guidelines_lines:
+                    if 'JSON' in line or '{"rows"' in line or line.startswith('IMPORTANT:'):
+                        break
+                    conceptual_guidelines.append(line)
+                guidelines = '\n'.join(conceptual_guidelines).strip()
+                action = 'the table content (plan what data to include)'
+            else:
+                action_map = {
+                    'outline': 'the final content (create an outline that will achieve these goals)',
+                    'draft': 'writing the content', 
+                    'review': 'providing feedback',
+                    'revision': 'revising the content'
+                }
+                action = action_map.get(operation, 'completing this task')
+            
+            if guidelines:  # Only add if we still have guidelines after filtering
+                base_prompt += f"\n\nGuidelines for {action}:\n{guidelines.strip()}"
         
         return base_prompt
     

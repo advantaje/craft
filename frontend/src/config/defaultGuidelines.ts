@@ -4,7 +4,6 @@
  */
 
 export interface SectionGuidelines {
-  outline: string;
   draft: string;
   review: string;
   revision: string;
@@ -12,17 +11,12 @@ export interface SectionGuidelines {
 
 export const DEFAULT_GUIDELINES: Record<string, SectionGuidelines> = {
   background: {
-    outline: `Create a structured outline that:
-- Provides historical context or previous work
-- Explains the current state of the topic
-- Identifies gaps or opportunities
-- Sets up the need for the current work`,
-    
-    draft: `Create informative content that:
-- Provides comprehensive context
-- References relevant previous work
-- Explains the current landscape
-- Justifies the need for this work`,
+    draft: `The content should:
+- Provide comprehensive historical context
+- Reference relevant previous work and research
+- Explain the current state and landscape
+- Identify gaps or opportunities
+- Justify the need for this work`,
     
     review: `Analyze the draft and provide specific feedback on:
 - Comprehensiveness of context
@@ -35,17 +29,12 @@ export const DEFAULT_GUIDELINES: Record<string, SectionGuidelines> = {
   },
 
   product: {
-    outline: `Create a structured outline that:
-- Summarizes key points and findings
-- Discusses implications or significance
-- Suggests future work or next steps
-- Provides final thoughts or recommendations`,
-    
-    draft: `Create impactful content that:
-- Effectively summarizes key points
-- Highlights important implications
-- Suggests actionable next steps
-- Leaves the reader with clear takeaways`,
+    draft: `The content should:
+- Effectively summarize key points and findings
+- Highlight important implications and significance
+- Suggest actionable next steps and recommendations
+- Provide clear takeaways and conclusions
+- Leave lasting impact on the reader`,
     
     review: `Analyze the draft and provide specific feedback on:
 - Effectiveness of summary
@@ -58,17 +47,12 @@ export const DEFAULT_GUIDELINES: Record<string, SectionGuidelines> = {
   },
 
   usage: {
-    outline: `Create a structured outline that:
-- Explains how to use or implement something
-- Provides step-by-step instructions
-- Includes examples or use cases
-- Covers common scenarios and edge cases`,
-    
-    draft: `Create practical content that:
-- Provides clear, actionable instructions
-- Includes relevant examples
-- Covers common use cases
-- Is easy to follow and implement`,
+    draft: `The content should:
+- Provide clear, step-by-step instructions
+- Include relevant examples and use cases
+- Cover common scenarios and edge cases
+- Be easy to follow and implement
+- Enable practical application`,
     
     review: `Analyze the draft and provide specific feedback on:
 - Clarity of instructions
@@ -81,17 +65,12 @@ export const DEFAULT_GUIDELINES: Record<string, SectionGuidelines> = {
   },
 
   introduction: {
-    outline: `Create a structured outline that:
-- Introduces the main topic or purpose
-- Provides necessary background context
-- States the objectives or goals
-- Outlines the structure of what follows`,
-    
-    draft: `Create engaging content that:
-- Captures the reader's attention
-- Clearly introduces the main topic
-- Provides essential context
-- States objectives clearly`,
+    draft: `The content should:
+- Capture the reader's attention from the start
+- Clearly introduce the main topic or purpose
+- Provide necessary background context
+- State objectives and goals clearly
+- Outline the structure of what follows`,
     
     review: `Analyze the draft and provide specific feedback on:
 - Hook effectiveness and reader engagement
@@ -104,13 +83,13 @@ export const DEFAULT_GUIDELINES: Record<string, SectionGuidelines> = {
   },
 
   model_limitations: {
-    outline: `Plan a Model Limitations table that describes:
-1. What types of model limitations should be included
-2. How many limitations approximately (aim for 3-6 items)
-3. Distribution across categories (Data Limitations, Technical Limitations, Scope Limitations)
-4. Key limitation areas that must be addressed`,
-    
-    draft: `Generate Model Limitations table data with these exact columns:
+    draft: `The Model Limitations table should:
+- Include 3-6 key limitations that users need to understand
+- Cover data, technical, and scope limitations appropriately
+- Provide clear descriptions of each limitation's impact
+- Help stakeholders understand model boundaries
+
+Table columns:
 - title (text): Brief title of the limitation
 - description (text): Detailed description of the limitation and its implications
 - category (select): Must be one of exactly: "Data Limitations", "Technical Limitations", or "Scope Limitations"
@@ -140,13 +119,14 @@ IMPORTANT: Return ONLY valid JSON in the exact format:
   },
 
   model_risk_issues: {
-    outline: `Plan a Model Risk Issues table that describes:
-1. What types of model risk issues should be included
-2. How many risk issues approximately (aim for 3-7 items)
-3. Which categories to focus on (Operational Risk, Market Risk, or Credit Risk)
-4. The importance levels to assign based on potential impact`,
-    
-    draft: `Generate Model Risk Issues table data with these exact columns:
+    draft: `The Model Risk Issues table should:
+- Identify 3-7 critical risk issues for stakeholder awareness
+- Cover operational, market, and credit risks as appropriate
+- Assess importance levels based on potential business impact
+- Provide comprehensive descriptions of each risk
+- Help with risk mitigation planning
+
+Table columns:
 - title (text): Brief title of the risk issue
 - description (text): Detailed description of the risk issue (can be longer and more comprehensive)
 - category (select): Must be one of exactly: "Operational Risk", "Market Risk", or "Credit Risk"
@@ -178,9 +158,7 @@ IMPORTANT: Return ONLY valid JSON in the exact format:
   },
 
   default: {
-    outline: `Create a structured outline that is appropriate for this type of section based on the provided notes.`,
-    
-    draft: `Create appropriate content for this section based on the notes and outline provided.`,
+    draft: `The content should be appropriate for this type of section, well-structured, and address the key points from the notes.`,
     
     review: `Analyze the draft and provide specific, constructive feedback appropriate for this type of section.`,
     
@@ -191,7 +169,7 @@ IMPORTANT: Return ONLY valid JSON in the exact format:
 /**
  * Get default guidelines for a section type and operation
  */
-export function getDefaultGuidelines(sectionType: string, operation: 'outline' | 'draft' | 'review' | 'revision'): string {
+export function getDefaultGuidelines(sectionType: string, operation: 'draft' | 'review' | 'revision'): string {
   const guidelines = DEFAULT_GUIDELINES[sectionType] || DEFAULT_GUIDELINES.default;
   return guidelines[operation];
 }

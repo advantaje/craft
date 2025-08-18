@@ -97,59 +97,6 @@ class ReviewLookupHandler(BaseHandler):
         return enhanced_data
 
 
-class GenerateOutlineHandler(BaseHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.generation_service = GenerationService()
-
-    def post(self):
-        try:
-            body = json.loads(self.request.body)
-            notes = body.get('notes', '')
-            section_name = body.get('sectionName', 'Section')
-            section_type = body.get('sectionType', 'default')
-            guidelines = body.get('guidelines', None)
-            
-            # Use generation service with section context
-            outline = self.generation_service.generate_outline_from_notes(
-                notes, section_name, section_type, guidelines
-            )
-            
-            response = {"result": outline}
-            self.set_header("Content-Type", "application/json")
-            self.write(json.dumps(response))
-        except Exception as e:
-            self.set_status(500)
-            self.write(json.dumps({"error": str(e)}))
-
-
-class GenerateDraftFromOutlineHandler(BaseHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.generation_service = GenerationService()
-
-    def post(self):
-        try:
-            body = json.loads(self.request.body)
-            notes = body.get('notes', '')
-            outline = body.get('outline', '')
-            section_name = body.get('sectionName', 'Section')
-            section_type = body.get('sectionType', 'default')
-            guidelines = body.get('guidelines', None)
-            
-            # Use generation service with section context
-            draft = self.generation_service.generate_draft_from_outline(
-                notes, outline, section_name, section_type, guidelines
-            )
-            
-            response = {"result": draft}
-            self.set_header("Content-Type", "application/json")
-            self.write(json.dumps(response))
-        except Exception as e:
-            self.set_status(500)
-            self.write(json.dumps({"error": str(e)}))
-
-
 class GenerateDraftFromReviewHandler(BaseHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -395,8 +342,6 @@ def make_app():
     return tornado.web.Application([
         (r"/api/hello", HelloHandler),
         (r"/api/review-lookup", ReviewLookupHandler),
-        (r"/api/generate-outline", GenerateOutlineHandler),
-        (r"/api/generate-draft-from-outline", GenerateDraftFromOutlineHandler),
         (r"/api/generate-draft-from-notes", GenerateDraftFromNotesHandler),
         (r"/api/generate-draft-from-review", GenerateDraftFromReviewHandler),
         (r"/api/generate-draft-from-review-with-diff", GenerateDraftFromReviewWithDiffHandler),

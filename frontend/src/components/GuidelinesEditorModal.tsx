@@ -67,20 +67,18 @@ const GuidelinesEditorModal: React.FC<GuidelinesEditorModalProps> = ({
   };
 
   const operationLabels = {
-    outline: 'Outline Generation',
     draft: 'Draft Writing', 
     review: 'Review & Feedback',
     revision: 'Revision Process'
   };
 
   const operationDescriptions = {
-    outline: 'Instructions for creating the section outline from notes',
-    draft: 'Instructions for writing the section content from notes and outline',
+    draft: 'Instructions for writing the section content from notes',
     review: 'Instructions for reviewing and providing feedback on the draft',
     revision: 'Instructions for revising the draft based on feedback'
   };
 
-  const operations: (keyof SectionGuidelines)[] = ['outline', 'draft', 'review', 'revision'];
+  const operations: (keyof SectionGuidelines)[] = ['draft', 'review', 'revision'];
 
   return (
     <Dialog
@@ -100,7 +98,7 @@ const GuidelinesEditorModal: React.FC<GuidelinesEditorModalProps> = ({
           Edit Guidelines for "{sectionName}"
         </Typography>
         <Typography variant="body2" color="textSecondary" style={{ marginTop: '4px' }}>
-          Customize how AI generates content for this section. These guidelines will be used in all generation steps.
+          Customize how AI generates content for this section. Draft guidelines are used for initial content creation.
         </Typography>
       </DialogTitle>
 

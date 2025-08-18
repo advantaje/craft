@@ -117,12 +117,19 @@ class GenerationService:
         return self._generate_content('revision', section_type, section_name, guidelines, draft=draft, review_notes=review_notes)
     
     def generate_draft_from_notes(self, notes: str, section_name: str, section_type: str, guidelines: str = None) -> str:
-        """Generate draft directly from notes using internal two-step process (notes -> outline -> draft)"""
+        """Generate draft directly from notes using internal two-step process (notes -> outline -> draft)
+        
+        Note: The 'guidelines' parameter contains the draft guidelines from the frontend.
+        These guidelines are intentionally used for both outline and draft generation steps
+        to ensure consistency. The outline generation is an internal implementation detail
+        not exposed to users.
+        """
         if not notes.strip():
             return "Please provide notes to generate a draft."
         
         try:
             # Step 1: Generate outline internally (not returned to user)
+            # Uses draft guidelines to ensure outline aligns with desired draft output
             outline = self.generate_outline_from_notes(notes, section_name, section_type, guidelines)
             
             # Check if outline generation failed
@@ -130,6 +137,7 @@ class GenerationService:
                 return f"Error in draft generation: {outline}"
             
             # Step 2: Generate draft from the internal outline
+            # Uses same draft guidelines for consistency
             draft = self.generate_draft_from_outline(notes, outline, section_name, section_type, guidelines)
             
             return draft

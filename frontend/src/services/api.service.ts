@@ -3,8 +3,6 @@ import {
   HelloResponse,
   DocumentInfo,
   ReviewLookupRequest,
-  GenerateOutlineRequest,
-  GenerateDraftFromOutlineRequest,
   GenerateReviewRequest,
   GenerateDraftFromReviewRequest,
   GenerateDraftFromNotesRequest,
@@ -37,16 +35,6 @@ export async function getHello(): Promise<HelloResponse> {
 
 export async function lookupReview(request: ReviewLookupRequest): Promise<DocumentInfo> {
   const response = await axiosInstance.get<ApiResponse<DocumentInfo>>(`/api/review-lookup?id=${encodeURIComponent(request.id)}`);
-  return response.data.result;
-}
-
-export async function generateOutline(request: GenerateOutlineRequest): Promise<string> {
-  const response = await axiosInstance.post<ApiResponse<string>>('/api/generate-outline', request);
-  return response.data.result;
-}
-
-export async function generateDraftFromOutline(request: GenerateDraftFromOutlineRequest): Promise<string> {
-  const response = await axiosInstance.post<ApiResponse<string>>('/api/generate-draft-from-outline', request);
   return response.data.result;
 }
 
