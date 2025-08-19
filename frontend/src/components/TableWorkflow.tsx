@@ -44,6 +44,7 @@ interface TableWorkflowProps {
   onToggleCompletion: (sectionId: string, completionType?: 'normal' | 'empty' | 'unexclude') => void;
   onTemplateTagUpdate: (sectionId: string, templateTag: string) => void;
   onGuidelinesUpdate: (sectionId: string, guidelines: any) => void;
+  selectedModel: string;
 }
 
 const TableWorkflow: React.FC<TableWorkflowProps> = ({
@@ -52,7 +53,8 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
   onSectionUpdate,
   onToggleCompletion,
   onTemplateTagUpdate,
-  onGuidelinesUpdate
+  onGuidelinesUpdate,
+  selectedModel
 }) => {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
@@ -130,7 +132,8 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
         notes: section.data.notes,
         sectionName: section.name,
         sectionType: tableConfig.sectionType,
-        guidelines: section.guidelines?.draft
+        guidelines: section.guidelines?.draft,
+        modelId: selectedModel
       });
       onSectionUpdate(section.id, 'draft', result);
     } catch (error) {
@@ -150,7 +153,8 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
         draft: section.data.draft,
         sectionName: section.name,
         sectionType: tableConfig.sectionType,
-        guidelines: section.guidelines?.review
+        guidelines: section.guidelines?.review,
+        modelId: selectedModel
       });
       onSectionUpdate(section.id, 'reviewNotes', result);
     } catch (error) {
@@ -176,7 +180,8 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
         draft: draftToReview,
         sectionName: `${section.name} - Selected Rows`,
         sectionType: tableConfig.sectionType,
-        guidelines: section.guidelines?.review
+        guidelines: section.guidelines?.review,
+        modelId: selectedModel
       });
       onSectionUpdate(section.id, 'reviewNotes', result);
     } catch (error) {
@@ -196,7 +201,8 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
         reviewNotes: section.data.reviewNotes,
         sectionName: section.name,
         sectionType: tableConfig.sectionType,
-        guidelines: section.guidelines?.revision
+        guidelines: section.guidelines?.revision,
+        modelId: selectedModel
       });
       
       // Open comparison dialog for table with diff data
@@ -235,7 +241,8 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
           sectionName: section.name,
           sectionType: tableConfig.sectionType,
           guidelines: section.guidelines?.revision,
-          fullTableData: tableData
+          fullTableData: tableData,
+          modelId: selectedModel
         });
         
         // Open row comparison dialog using backend-formatted strings
@@ -257,7 +264,8 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
           reviewNotes: section.data.reviewNotes,
           sectionName: `${section.name} - Selected Rows`,
           sectionType: tableConfig.sectionType,
-          guidelines: section.guidelines?.revision
+          guidelines: section.guidelines?.revision,
+          modelId: selectedModel
         });
         
         // Parse the reviewed subset returned by LLM
@@ -510,7 +518,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
                         variant="outlined"
                         color="primary"
                         onClick={handleGenerateTableReview}
-                        disabled={!section.data.draft.trim() || loading['generate-table-review']}
+                        disabled={!section.data.draft.trim() || !hasTableData() || loading['generate-table-review']}
                         size="small"
                       >
                         {loading['generate-table-review'] ? (
@@ -526,7 +534,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
                         variant="outlined"
                         color="secondary"
                         onClick={handleGenerateSelectedRowsReview}
-                        disabled={selectedRowIndices.length === 0 || loading['generate-selected-review']}
+                        disabled={selectedRowIndices.length === 0 || !hasTableData() || loading['generate-selected-review']}
                         size="small"
                       >
                         {loading['generate-selected-review'] ? (
@@ -562,9 +570,9 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
                     <Box display="flex" style={{ gap: '8px' }}>
                       <Button
                         variant="contained"
-                        color="secondary"
+                        color="primary"
                         onClick={handleApplyTableReview}
-                        disabled={!section.data.draft.trim() || !section.data.reviewNotes.trim() || loading['apply-table-review']}
+                        disabled={!section.data.draft.trim() || !hasTableData() || !section.data.reviewNotes.trim() || loading['apply-table-review']}
                         startIcon={<RefreshIcon />}
                         size="small"
                       >
@@ -579,9 +587,9 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
                       </Button>
                       <Button
                         variant="contained"
-                        color="primary"
+                        color="secondary"
                         onClick={handleApplySelectedRowsReview}
-                        disabled={selectedRowIndices.length === 0 || !section.data.reviewNotes.trim() || loading['apply-selected-review']}
+                        disabled={selectedRowIndices.length === 0 || !hasTableData() || !section.data.reviewNotes.trim() || loading['apply-selected-review']}
                         startIcon={<RefreshIcon />}
                         size="small"
                       >

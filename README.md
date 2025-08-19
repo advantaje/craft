@@ -1,362 +1,358 @@
-# CRAFT - Document Planning & Drafting System
+# 🎨 CRAFT - AI-Powered Document Planning & Drafting System
 
-## Technical Architecture Overview
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-4.5+-blue.svg)](https://typescriptlang.org)
+[![React](https://img.shields.io/badge/React-17+-blue.svg)](https://reactjs.org)
+[![Material-UI](https://img.shields.io/badge/Material--UI-4.12+-blue.svg)](https://mui.com)
 
-CRAFT is a sophisticated document generation system that combines React frontend with Python backend to create AI-powered document drafting workflows. This README explains the internal code structure and architectural decisions.
+CRAFT is a sophisticated full-stack application that transforms document creation through AI-powered assistance. It combines intelligent content generation with iterative improvement cycles to produce high-quality professional documents efficiently.
 
-## System Architecture
+## ✨ Key Features
+
+- **🤖 AI-Powered Content Generation** - Generate drafts from simple notes using GPT-4
+- **🔄 Iterative Improvement Cycle** - AI reviews, suggests improvements, and applies feedback
+- **📊 Structured Table Management** - Create and manage complex data tables with AI assistance
+- **🎯 Section-Based Workflow** - Organize documents into manageable, focused sections
+- **📝 Intelligent Diff Visualization** - See exactly what changes before applying them
+- **📄 Professional Document Export** - Generate polished Word documents with custom templates
+- **⚙️ Customizable AI Guidelines** - Fine-tune AI behavior for different section types
+- **🎨 Rich User Interface** - Intuitive Material-UI components with progress tracking
+
+## 🏗️ Architecture
+
+CRAFT is built as a modern full-stack application with clear separation of concerns:
 
 ```
-┌─────────────────┐    HTTP/REST    ┌──────────────────┐
-│   React Frontend │ ──────────────→ │  Python Backend  │
-│   (TypeScript)   │ ←────────────── │   (Tornado)      │
-└─────────────────┘                 └──────────────────┘
-         │                                    │
-         │                                    │
-    ┌────▼────┐                          ┌───▼────┐
-    │Material │                          │OpenAI  │
-    │   UI    │                          │  API   │
-    └─────────┘                          └────────┘
-                                              │
-                                         ┌────▼─────┐
-                                         │ DocX     │
-                                         │Generation│
-                                         └──────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                   Frontend (React/TypeScript)              │
+│  Material-UI Components │ State Management │ API Client    │
+├─────────────────────────────────────────────────────────────┤
+│                   HTTP/JSON API Layer                      │
+│              RESTful Endpoints │ Request/Response           │
+├─────────────────────────────────────────────────────────────┤
+│                   Backend (Python/Tornado)                 │
+│  Business Logic │ OpenAI Integration │ Document Generation │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## Core Data Flow
+### Frontend Stack
+- **React 17** with TypeScript for type safety
+- **Material-UI v4** for consistent, professional UI components
+- **Custom hooks** for state management and business logic
+- **Axios** for HTTP communication
+- **Real-time diff visualization** with multiple viewing modes
 
-### 1. Document Lifecycle
-```
-User Input → Section Notes → AI Outline → AI Draft → AI Review → Document Generation
-     │             │            │          │         │              │
-     │             │            │          │         │              │
-  Setup Phase   Content     Structure   Content   Refinement    Export
-             Generation   Generation  Generation  Generation   Generation
-```
+### Backend Stack
+- **Python 3.8+** with Tornado web framework
+- **OpenAI GPT-4** integration for content generation
+- **Structured JSON schemas** for table data validation
+- **Word document generation** with Jinja2 templating
+- **Modular service architecture** for maintainability
 
-### 2. Section State Management
-Each document section maintains state through the workflow:
-```typescript
-interface DocumentSection {
-  id: string;           // Unique identifier
-  name: string;         // Display name
-  type: string;         // Determines AI prompts
-  templateTag?: string; // Word template placeholder
-  data: {
-    notes: string;      // User input
-    outline: string;    // AI-generated structure
-    draft: string;      // AI-generated content
-    reviewNotes: string;// AI-generated feedback
-  };
-  isCompleted: boolean;     // Workflow completion status
-  completionType?: 'normal' | 'empty'; // Completion method
-}
-```
+## 🚀 Getting Started
 
-## Frontend Architecture
+### Prerequisites
 
-### Component Hierarchy
-```
-App
-├── HashRouter
-    └── Craft (Main Container)
-        ├── DocumentSetup (Review lookup + Template selection)
-        ├── SectionWorkflow[] (Text-based sections)
-        │   ├── Notes Input
-        │   ├── Outline Generation
-        │   ├── Draft Generation
-        │   └── Review Cycle
-        ├── TableWorkflow[] (Structured data sections)
-        │   ├── Table Editor
-        │   ├── JSON Data Management
-        │   └── AI Table Generation
-        └── FileGenerationModal (Document export)
-```
+- **Python 3.8+** with pip
+- **Node.js 14+** with npm
+- **OpenAI API Key** (for AI functionality)
 
-### Key Design Patterns
+### Installation
 
-#### 1. Custom Hooks Pattern
-The `useDocumentSections` hook encapsulates all section state logic:
-```typescript
-export function useDocumentSections() {
-  const [sections, setSections] = useState<DocumentSection[]>(DEFAULT_SECTIONS);
-  
-  // State management methods
-  const updateSectionData = useCallback(/* ... */);
-  const toggleSectionCompletion = useCallback(/* ... */);
-  const addSection = useCallback(/* ... */);
-  
-  return {
-    sections,
-    updateSectionData,
-    toggleSectionCompletion,
-    // ... other methods
-  };
-}
-```
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd craft
+   ```
 
-#### 2. Workflow State Machine
-Each section follows a defined state progression:
-```
-Empty → Notes Added → Outline Generated → Draft Generated → Review Applied → Complete
-  │         │              │                 │                 │             │
-  │         │              │                 │                 │             │
-  ▼         ▼              ▼                 ▼                 ▼             ▼
-Setup   Content         Structure        Content           Refinement    Ready
-Phase   Collection      Planning         Creation          Cycle         Export
-```
+2. **Backend Setup**
+   ```bash
+   cd backend
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
 
-#### 3. Type-Safe API Layer
-All API interactions are strongly typed:
-```typescript
-// Request/Response interfaces ensure type safety
-export async function generateOutline(request: GenerateOutlineRequest): Promise<string> {
-  const response = await axiosInstance.post<ApiResponse<string>>('/generate-outline', request);
-  return response.data.result;
-}
-```
+3. **Frontend Setup**
+   ```bash
+   cd frontend
+   npm install
+   ```
 
-### Section Type System
+4. **Environment Configuration**
+   ```bash
+   # Backend: Create .env file in backend/
+   OPENAI_API_KEY=your_openai_api_key_here
+   PORT=8888
+   
+   # Frontend: Create .env file in frontend/
+   REACT_APP_API_BASE_URL=http://localhost:8888
+   ```
 
-#### Standard Sections (Text-based)
-- **Background**: Historical context and previous work
-- **Product**: products and recommendations  
-- **Usage**: Implementation instructions
-- **Custom**: User-defined sections
+### Running the Application
 
-#### Structured Sections (Table-based)
-- **Model Limitations**: Technical constraints and scope
-- **Model Risk Issues**: Risk assessment and categorization
+1. **Start the Backend**
+   ```bash
+   cd backend
+   source venv/bin/activate
+   python app.py
+   ```
 
-Each type has specialized AI prompts and rendering logic.
+2. **Start the Frontend** (in a new terminal)
+   ```bash
+   cd frontend
+   npm start
+   ```
 
-## Backend Architecture
+3. **Access the Application**
+   - Open http://localhost:3000 in your browser
+   - The backend API will be running on http://localhost:8888
 
-### Service Layer Design
+## 📖 How It Works
 
-#### 1. Generation Service (`generation_service.py`)
-Handles AI content generation with section-aware processing:
-```python
-class GenerationService:
-    def __init__(self):
-        self.prompts = SectionPrompts()    # Section-specific prompts
-        self.client = create_azure_openai_client()
-        self.model = 'gpt-4.1-mini-2025-04-14'
-    
-    def generate_outline_from_notes(self, notes, section_name, section_type):
-        prompt = self.prompts.get_outline_prompt(section_type, section_name, notes)
-        # AI generation logic
-        
-    def generate_draft_from_outline(self, notes, outline, section_name, section_type):
-        # Handles both text and JSON generation based on section_type
-        if section_type in ['model_limitations', 'model_risk_issues']:
-            # JSON mode for structured data
-        else:
-            # Standard text generation
-```
+### Document Creation Workflow
 
-#### 2. Document Generation Service (`document_generation_service.py`)
-Transforms section data into Word documents:
-```python
-class DocumentGenerationService:
-    def generate_docx_document(self, document_id, document_data, sections, template_info):
-        # Load template (default or custom)
-        # Process each section
-        # Map content to template tags
-        # Generate final document
-```
+1. **📋 Document Setup**
+   - Enter Review ID to fetch document metadata
+   - Choose default or custom Word template
+   - Setup must be complete before proceeding
 
-### AI Prompt Architecture
+2. **📝 Section-Based Content Creation**
+   CRAFT organizes documents into focused sections:
+   
+   **Text Sections:**
+   - **Background**: Historical context and previous work
+   - **Product**: Key findings and recommendations
+   - **Usage**: Step-by-step implementation instructions
+   
+   **Table Sections:**
+   - **Model Limitations**: Technical constraints and scope boundaries
+   - **Model Risk Issues**: Risk assessment with categorization and importance levels
 
-#### Prompt Template System
-The `SectionPrompts` class contains specialized templates for each section type and workflow stage:
-```python
-class SectionPrompts:
-    OUTLINE_PROMPTS = {
-        "introduction": "...",     # Section-specific outline guidance
-        "background": "...",       # Historical context prompts
-        "model_limitations": "...", # Table structure prompts
-        # ... other section types
-    }
-    
-    DRAFT_PROMPTS = {
-        # Content generation templates
-    }
-    
-    REVIEW_PROMPTS = {
-        # Improvement feedback templates
-    }
-    
-    REVISION_PROMPTS = {
-        # Content refinement templates
-    }
-```
+3. **🔄 AI-Powered Iterative Improvement**
+   Each section follows a sophisticated 4-step workflow:
+   
+   ```
+   Notes Input → AI Draft Generation → AI Review & Feedback → Apply Improvements
+   ```
+   
+   - **Notes**: User provides initial thoughts and requirements
+   - **Draft**: AI generates structured content from notes
+   - **Review**: AI analyzes draft and suggests specific improvements
+   - **Revision**: AI applies feedback with diff preview for user approval
 
-#### AI Generation Modes
-1. **Text Mode**: Standard content generation for narrative sections
-2. **JSON Mode**: Structured data generation for table sections
-3. **Review Mode**: Analysis and feedback generation
-4. **Revision Mode**: Content improvement based on feedback
+4. **📄 Professional Document Export**
+   - Generate Word documents using default or custom templates
+   - Automatic placeholder mapping (e.g., `{{background}}`, `{{model_limitations}}`)
+   - Support for both text content and formatted tables
 
-### Document Processing Pipeline
+### Advanced Features
 
-#### 1. Template System
-Uses custom DocxTemplate implementation with Jinja2:
-```python
-# Template tags map to section content
-context = {
-    'background': cleaned_background_content,
-    'product': cleaned_product_content,
-    'model_limitations': formatted_table_data,
-    # ... other sections
-}
+#### 🎯 Text Selection & Targeted Review
+- Select specific text portions for focused AI review
+- Apply improvements only to selected content
+- Context-aware AI considers surrounding text
 
-doc.render(context)  # Jinja2 template rendering
-```
+#### 📊 Smart Table Management
+- Interactive table editor with validation
+- Multi-row selection for batch operations
+- AI-powered table generation from natural language descriptions
+- Support for different data types (text, select dropdowns, numbers, dates)
 
-#### 2. Content Processing
-- **Text Sections**: Cleaned and formatted for Word
-- **Table Sections**: JSON data converted to formatted tables
-- **Template Tags**: Dynamic mapping based on section configuration
+#### 🔍 Intelligent Diff Visualization
+Multiple viewing modes for reviewing changes:
+- **Unified View**: Single pane with highlighted additions/deletions
+- **Side by Side**: Clean comparison view
+- **Side by Side (Highlighted)**: Detailed change visualization
 
-#### 3. File Generation
-```python
-def generate_docx_document_with_progress(self, document_id, document_data, sections, progress_callback, template_info):
-    # 1. Load template (default or custom)
-    # 2. Process section content
-    # 3. Build context dictionary
-    # 4. Render template with content
-    # 5. Return BytesIO buffer
-```
+#### ⚙️ Customizable AI Guidelines
+- Section-specific AI behavior customization
+- Three operation types: Draft Writing, Review & Feedback, Revision Process
+- Per-section guidelines with reset to defaults option
 
-## Data Models
-
-### Core Interfaces
-```typescript
-// Section data structure
-interface SectionData {
-  notes: string;        // User input
-  outline: string;      // AI-generated structure  
-  draft: string;        // AI-generated content
-  reviewNotes: string;  // AI-generated feedback
-}
-
-// Document metadata
-interface DocumentInfo {
-  [key: string]: string; // Flexible document properties
-}
-
-// Template configuration
-interface TemplateInfo {
-  name: string;
-  type: 'default' | 'custom';
-  isUploaded?: boolean;
-}
-
-// Table configuration for structured sections
-interface TableConfiguration {
-  columns: TableColumn[];
-  sectionType: string;
-}
-```
-
-### API Request/Response Types
-All API endpoints use strongly-typed interfaces:
-- `GenerateOutlineRequest`
-- `GenerateDraftFromOutlineRequest` 
-- `GenerateReviewRequest`
-- `GenerateDocumentRequest`
-
-## Key Technical Decisions
-
-### 1. Section-Based Architecture
-- **Modular Design**: Each section is independent and reusable
-- **Type Safety**: Strong typing throughout the stack
-- **State Isolation**: Section state is managed independently
-
-### 2. AI Integration Strategy
-- **Prompt Engineering**: Section-specific prompts for better results
-- **Mode Selection**: Different generation modes for text vs. structured data
-- **Error Handling**: Graceful degradation for AI service issues
-
-### 3. Document Generation Pipeline
-- **Template Abstraction**: Flexible template system supporting custom uploads
-- **Content Mapping**: Dynamic mapping of section content to template placeholders
-- **Format Support**: Extensible to support multiple output formats
-
-### 4. State Management
-- **Custom Hooks**: Encapsulated state logic with React hooks
-- **Immutable Updates**: Functional state updates for predictability
-- **Completion Tracking**: Sophisticated completion state with exclusion support
-
-## File Organization
+## 📁 Project Structure
 
 ```
 craft/
-├── frontend/
-│   ├── src/
-│   │   ├── components/           # React components
-│   │   │   ├── Craft.tsx        # Main container
-│   │   │   ├── DocumentSetup.tsx # Setup workflow
-│   │   │   ├── SectionWorkflow.tsx # Text sections
-│   │   │   ├── TableWorkflow.tsx # Table sections
-│   │   │   └── ...
-│   │   ├── hooks/               # Custom React hooks
-│   │   │   └── useDocumentSections.ts
-│   │   ├── services/            # API layer
-│   │   │   └── api.service.ts
-│   │   ├── types/               # TypeScript interfaces
-│   │   │   └── document.types.ts
-│   │   └── config/              # Configuration
-│   │       └── tableConfigurations.ts
-│   └── package.json
-├── backend/
-│   ├── app.py                   # Tornado web server
-│   ├── services/                # Business logic
-│   │   ├── generation_service.py # AI generation
-│   │   ├── document_generation_service.py # Document creation
-│   │   └── openai_tools.py      # AI client
-│   ├── prompts/                 # AI prompt templates
-│   │   └── section_prompts.py
-│   ├── template.py              # DocX template engine
-│   └── template-tagged.docx     # Default Word template
-└── README.md                    # This file
+├── backend/                    # Python Tornado backend
+│   ├── app.py                 # Main application entry point
+│   ├── prompts/               # AI prompt templates
+│   │   └── section_prompts.py # Section-specific prompt logic
+│   └── services/              # Business logic modules
+│       ├── generation_service.py      # Core AI generation
+│       ├── document_generation_service.py  # Word doc creation
+│       ├── diff_service.py           # Text comparison utilities
+│       ├── json_schema_service.py    # Table structure definitions
+│       ├── openai_tools.py           # OpenAI API integration
+│       ├── review_data_service.py    # Data retrieval
+│       └── template_service.py       # Word template processing
+│
+├── frontend/                   # React TypeScript frontend
+│   └── src/
+│       ├── components/        # React UI components
+│       │   ├── About.tsx     # User guide and help
+│       │   ├── Craft.tsx     # Main application shell
+│       │   ├── DocumentSetup.tsx     # Review lookup & template selection
+│       │   ├── SectionWorkflow.tsx   # Text section handler
+│       │   ├── TableWorkflow.tsx     # Table section handler
+│       │   ├── DiffViewer.tsx        # Change visualization
+│       │   └── [other components]
+│       ├── hooks/             # Custom React hooks
+│       │   └── useDocumentSections.ts # Section state management
+│       ├── services/          # API communication layer
+│       │   └── api.service.ts # HTTP client for backend APIs
+│       ├── types/             # TypeScript type definitions
+│       │   └── document.types.ts     # Core data structures
+│       ├── config/            # Configuration files
+│       │   ├── defaultGuidelines.ts  # AI behavior guidelines
+│       │   └── tableConfigurations.ts # Table column definitions
+│       └── utils/             # Utility functions
+│
+├── CONFIGURATION.md           # Customization guide
+├── DEVELOPER_GUIDE.md         # Developer onboarding
+└── README.md                  # This file
 ```
 
-## Development Workflow
+## 🎛️ Configuration & Customization
 
-### 1. Adding New Section Types
-1. Define section type in `useDocumentSections.ts`
-2. Add prompts in `section_prompts.py`
-3. Create component logic (text or table-based)
-4. Update generation service handling
-5. Add template tags to Word template
+CRAFT is highly customizable through configuration files:
 
-### 2. Extending AI Capabilities
-1. Add prompt templates in `SectionPrompts`
-2. Update generation service methods
-3. Handle new data formats in document generation
-4. Add API endpoints if needed
+### Adding New Sections
+- **Frontend**: Modify `useDocumentSections.ts` and `defaultGuidelines.ts`
+- **Backend**: Update `section_prompts.py` for new section types
 
-### 3. Document Format Support
-1. Extend document generation service
-2. Add format-specific processing logic
-3. Update template handling
-4. Add new API endpoints for format selection
+### Table Structure Customization
+- **Frontend**: Edit `tableConfigurations.ts` for UI definitions
+- **Backend**: Update `json_schema_service.py` for validation schemas
+- **⚠️ Important**: Frontend and backend table configs must match exactly
 
-## Performance Considerations
+### AI Behavior Modification
+- **Guidelines**: Customize `defaultGuidelines.ts` for section-specific behavior
+- **Prompts**: Modify `section_prompts.py` for fundamental prompt changes
 
-- **Lazy Loading**: Components load on-demand
-- **State Optimization**: useCallback for expensive operations
-- **API Batching**: Parallel API calls where possible
-- **Memory Management**: Template caching with cleanup
+See [CONFIGURATION.md](./CONFIGURATION.md) for detailed customization instructions.
 
-## Security Features
+## 🛠️ Development
 
-- **Input Validation**: Comprehensive validation on both client and server
-- **Template Security**: Safe template processing with validation
-- **API Security**: CORS configuration and error handling
-- **File Upload**: Restricted file types and validation
+### For New Developers
+If you're new to this codebase, especially coming from a Python background, see our comprehensive [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) which includes:
 
-This architecture provides a solid foundation for AI-powered document generation while maintaining code quality, type safety, and extensibility.
+- Full-stack architecture explanation
+- Frontend concepts for Python developers
+- Data flow walkthroughs
+- Common debugging techniques
+- Step-by-step feature addition guides
+
+### API Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/review-lookup` | POST | Fetch document metadata by Review ID |
+| `/api/generate-draft-from-notes` | POST | Generate initial content from user notes |
+| `/api/generate-review` | POST | AI analysis and feedback generation |
+| `/api/generate-draft-from-review-with-diff` | POST | Apply feedback with diff tracking |
+| `/api/generate-document` | POST | Create final Word document |
+| `/api/upload-template` | POST | Upload custom Word templates |
+
+### Technology Choices
+
+**Frontend:**
+- **React 17**: Mature, stable version with excellent ecosystem
+- **TypeScript**: Static typing for better development experience
+- **Material-UI v4**: Consistent, professional UI components
+- **Custom hooks**: Clean separation of business logic from UI
+
+**Backend:**
+- **Tornado**: High-performance async Python web framework
+- **OpenAI GPT-4**: State-of-the-art language model for content generation
+- **python-docx**: Word document manipulation
+- **Jinja2**: Template rendering for document generation
+
+## 🤝 Contributing
+
+1. **Fork the repository**
+2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
+3. **Make your changes**
+   - Follow existing code patterns
+   - Add tests for new functionality
+   - Update documentation as needed
+4. **Test thoroughly**
+   - Test both frontend and backend changes
+   - Verify AI generation still works
+   - Check document export functionality
+5. **Submit a pull request**
+
+### Code Style
+
+**Python (Backend):**
+- Follow PEP 8 conventions
+- Use type hints where appropriate
+- Document complex functions with docstrings
+
+**TypeScript (Frontend):**
+- Use functional components with hooks
+- Prefer `const` assertions and explicit typing
+- Follow React best practices for state management
+
+### Manual Testing
+1. Complete document creation workflow
+2. Test all AI generation features
+3. Verify Word document export
+4. Test custom template upload
+5. Validate table operations
+
+## 📊 System Requirements
+
+### Minimum Requirements
+- **RAM**: 4GB (8GB recommended)
+- **Storage**: 2GB free space
+- **Network**: Stable internet connection for OpenAI API calls
+
+### Performance Considerations
+- AI generation typically takes 3-10 seconds per operation
+- Document export is nearly instantaneous
+- Frontend is optimized for modern browsers (Chrome, Firefox, Safari, Edge)
+
+## 🔒 Security & Privacy
+
+- **API Keys**: Never commit OpenAI API keys to version control
+- **Data Storage**: All document data is stored locally in browser storage
+- **Network**: All AI requests are made server-side to protect API credentials
+- **Templates**: Custom templates are processed securely without executing macros
+
+## 📈 Roadmap
+
+- [ ] **Enhanced AI Models**: Support for different OpenAI models and providers
+- [ ] **Collaboration Features**: Multi-user document editing
+- [ ] **Version Control**: Document history and branching
+- [ ] **Advanced Templates**: More sophisticated template customization
+- [ ] **Export Formats**: PDF, HTML, and Markdown export options
+- [ ] **Offline Mode**: Basic functionality without AI assistance
+
+## 🐛 Known Issues
+
+- **Large Documents**: Performance may degrade with very large documents (>50 sections)
+- **Internet Dependency**: AI features require stable internet connection
+- **Browser Storage**: Clearing browser data will lose unsaved work
+- **Template Complexity**: Very complex Word templates may not render perfectly
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **OpenAI** for providing the GPT-4 API that powers our AI features
+- **Material-UI Team** for the excellent React component library
+- **Tornado Team** for the robust async Python web framework
+- **React Team** for the incredible frontend framework
+
+## 📞 Support
+
+- **Documentation**: See [CONFIGURATION.md](./CONFIGURATION.md) and [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)
+- **Issues**: Please report bugs and feature requests through GitHub issues
+- **Questions**: For general questions about usage or development
+
+---
+
+**Built with ❤️ for creating better documents through AI assistance.**

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { DocumentSection, SectionData } from '../types/document.types';
 import { getSectionDefaultGuidelines, SectionGuidelines } from '../config/defaultGuidelines';
+import { useLocalStorage } from './useLocalStorage';
 
 const DEFAULT_SECTIONS: DocumentSection[] = [
   { 
@@ -51,7 +52,18 @@ const DEFAULT_SECTIONS: DocumentSection[] = [
 ];
 
 export function useDocumentSections() {
-  const [sections, setSections] = useState<DocumentSection[]>(DEFAULT_SECTIONS);
+  const [sections, setSections, clearSections] = useLocalStorage<DocumentSection[]>(
+    'craft-document-sections',
+    DEFAULT_SECTIONS,
+    {
+      onError: (error, operation) => {
+        console.error(`Error ${operation === 'load' ? 'loading' : 'saving'} sections:`, error);
+        if (operation === 'load') {
+          console.warn('Falling back to default sections due to localStorage error');
+        }
+      }
+    }
+  );
 
   const updateSectionData = useCallback((
     sectionId: string,
@@ -153,6 +165,10 @@ export function useDocumentSections() {
     return sections.find(section => section.id === sectionId);
   }, [sections]);
 
+  const resetAllSections = useCallback(() => {
+    clearSections();
+  }, [clearSections]);
+
   return {
     sections,
     updateSectionData,
@@ -162,6 +178,7 @@ export function useDocumentSections() {
     addSection,
     removeSection,
     canRemoveSection,
-    getSectionById
+    getSectionById,
+    resetAllSections
   };
 }

@@ -26,10 +26,11 @@ class GenerationService:
         'revision': "You are an expert writer. Revise documents based on feedback while maintaining the original intent."
     }
     
-    def __init__(self):
+    def __init__(self, model_id: str = None):
         self.prompts = SectionPrompts()
         self.client = create_azure_openai_client()
-        self.model = 'gpt-4.1-nano-2025-04-14'
+        # Use provided model ID or fallback to default
+        self.model = model_id or 'gpt-4.1-2025-04-14'
         self.diff_service = DocumentDiffService()
     
     def _generate_content(self, operation: str, section_type: str, section_name: str, guidelines: str = None, prompt_override: str = None, **prompt_kwargs) -> str:

@@ -8,16 +8,13 @@ import {
   AccordionSummary,
   AccordionDetails,
   Button,
-  Chip,
   Grid,
   Card,
   CardContent,
   List,
   ListItem,
   ListItemIcon,
-  ListItemText,
-  Divider,
-  Link
+  ListItemText
 } from '@material-ui/core';
 import {
   ExpandMore as ExpandMoreIcon,
@@ -122,10 +119,6 @@ const About: React.FC = () => {
 
   const handleAccordionChange = (panel: string) => (event: React.ChangeEvent<{}>, isExpanded: boolean) => {
     setExpandedPanel(isExpanded ? panel : false);
-  };
-
-  const sectionStyle = {
-    marginBottom: '1rem'
   };
 
   const featureBoxStyle = {

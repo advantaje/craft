@@ -41,6 +41,7 @@ interface SectionWorkflowProps {
   onToggleCompletion: (sectionId: string, completionType?: 'normal' | 'empty' | 'unexclude') => void;
   onTemplateTagUpdate: (sectionId: string, templateTag: string) => void;
   onGuidelinesUpdate: (sectionId: string, guidelines: any) => void;
+  selectedModel: string;
 }
 
 const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
@@ -48,7 +49,8 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
   onSectionUpdate,
   onToggleCompletion,
   onTemplateTagUpdate,
-  onGuidelinesUpdate
+  onGuidelinesUpdate,
+  selectedModel
 }) => {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
@@ -93,7 +95,8 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
         notes: section.data.notes,
         sectionName: section.name,
         sectionType: section.type,
-        guidelines: section.guidelines?.draft
+        guidelines: section.guidelines?.draft,
+        modelId: selectedModel
       });
       onSectionUpdate(section.id, 'draft', result);
     } catch (error) {
@@ -113,7 +116,8 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
         draft: section.data.draft,
         sectionName: section.name,
         sectionType: section.type,
-        guidelines: section.guidelines?.review
+        guidelines: section.guidelines?.review,
+        modelId: selectedModel
       });
       onSectionUpdate(section.id, 'reviewNotes', result);
     } catch (error) {
@@ -133,7 +137,8 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
         reviewNotes: section.data.reviewNotes,
         sectionName: section.name,
         sectionType: section.type,
-        guidelines: section.guidelines?.revision
+        guidelines: section.guidelines?.revision,
+        modelId: selectedModel
       });
       
       // Open comparison dialog with diff data
@@ -216,7 +221,8 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
         sectionName: section.name,
         sectionType: section.type,
         guidelines: section.guidelines?.review,
-        fullDraft: section.data.draft
+        fullDraft: section.data.draft,
+        modelId: selectedModel
       });
       
       onSectionUpdate(section.id, 'reviewNotes', result);
@@ -240,7 +246,8 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
         reviewNotes: section.data.reviewNotes,
         sectionName: section.name,
         sectionType: section.type,
-        guidelines: section.guidelines?.revision
+        guidelines: section.guidelines?.revision,
+        modelId: selectedModel
       });
       
       setComparisonDialog({
@@ -449,7 +456,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
                     <Box display="flex" style={{ gap: '8px' }}>
                       <Button
                         variant="contained"
-                        color="secondary"
+                        color="primary"
                         onClick={handleGenerateDraftFromReview}
                         disabled={!section.data.draft.trim() || !section.data.reviewNotes.trim() || loading['apply-review']}
                         startIcon={<RefreshIcon />}
@@ -466,7 +473,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
                       </Button>
                       <Button
                         variant="contained"
-                        color="primary"
+                        color="secondary"
                         onClick={handleApplyReviewToSelection}
                         disabled={!textSelection || !section.data.reviewNotes.trim() || loading['apply-selection']}
                         startIcon={<RefreshIcon />}

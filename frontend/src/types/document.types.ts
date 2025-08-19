@@ -62,6 +62,7 @@ export interface GenerateReviewRequest {
   sectionName: string;
   sectionType: string;
   guidelines?: string;
+  modelId?: string;
 }
 
 export interface GenerateDraftFromReviewRequest {
@@ -70,6 +71,7 @@ export interface GenerateDraftFromReviewRequest {
   sectionName: string;
   sectionType: string;
   guidelines?: string;
+  modelId?: string;
 }
 
 export interface GenerateDraftFromNotesRequest {
@@ -77,6 +79,7 @@ export interface GenerateDraftFromNotesRequest {
   sectionName: string;
   sectionType: string;
   guidelines?: string;
+  modelId?: string;
 }
 
 export interface ApiError {
@@ -124,6 +127,7 @@ export interface GenerateRowReviewRequest {
   sectionType?: string;
   guidelines?: string;
   fullTableData?: TableData;
+  modelId?: string;
 }
 
 export interface GenerateRowReviewResponse {
@@ -143,6 +147,7 @@ export interface GenerateSelectionReviewRequest {
   sectionType?: string;
   guidelines?: string;
   fullDraft?: string;
+  modelId?: string;
 }
 
 export interface ApplySelectionReviewRequest {
@@ -154,6 +159,7 @@ export interface ApplySelectionReviewRequest {
   sectionName: string;
   sectionType?: string;
   guidelines?: string;
+  modelId?: string;
 }
 
 export interface ApplySelectionReviewResponse {

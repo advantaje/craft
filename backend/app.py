@@ -101,7 +101,6 @@ class ReviewLookupHandler(BaseHandler):
 class GenerateDraftFromNotesHandler(BaseHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.generation_service = GenerationService()
 
     def post(self):
         try:
@@ -110,9 +109,13 @@ class GenerateDraftFromNotesHandler(BaseHandler):
             section_name = body.get('sectionName', 'Section')
             section_type = body.get('sectionType', 'default')
             guidelines = body.get('guidelines', None)
+            model_id = body.get('modelId', None)
+            
+            # Create generation service with specified model
+            generation_service = GenerationService(model_id)
             
             # Use combined generation service method
-            draft = self.generation_service.generate_draft_from_notes(
+            draft = generation_service.generate_draft_from_notes(
                 notes, section_name, section_type, guidelines
             )
             
@@ -127,7 +130,6 @@ class GenerateDraftFromNotesHandler(BaseHandler):
 class GenerateDraftFromReviewWithDiffHandler(BaseHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.generation_service = GenerationService()
 
     def post(self):
         try:
@@ -137,9 +139,13 @@ class GenerateDraftFromReviewWithDiffHandler(BaseHandler):
             section_name = body.get('sectionName', 'Section')
             section_type = body.get('sectionType', 'default')
             guidelines = body.get('guidelines', None)
+            model_id = body.get('modelId', None)
+            
+            # Create generation service with specified model
+            generation_service = GenerationService(model_id)
             
             # Use enhanced generation service method with diff computation
-            result = self.generation_service.apply_review_notes_with_diff(
+            result = generation_service.apply_review_notes_with_diff(
                 draft, review_notes, section_name, section_type, guidelines
             )
             
@@ -160,7 +166,6 @@ class GenerateDraftFromReviewWithDiffHandler(BaseHandler):
 class GenerateRowFromReviewWithDiffHandler(BaseHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.generation_service = GenerationService()
 
     def post(self):
         try:
@@ -173,9 +178,13 @@ class GenerateRowFromReviewWithDiffHandler(BaseHandler):
             section_type = body.get('sectionType', None)
             guidelines = body.get('guidelines', None)
             full_table_data = body.get('fullTableData', None)
+            model_id = body.get('modelId', None)
+            
+            # Create generation service with specified model
+            generation_service = GenerationService(model_id)
             
             # Use row review service method
-            result = self.generation_service.review_table_row_with_diff(
+            result = generation_service.review_table_row_with_diff(
                 row_data, review_notes, columns, section_name, section_type, guidelines, full_table_data
             )
             
@@ -196,7 +205,6 @@ class GenerateRowFromReviewWithDiffHandler(BaseHandler):
 class GenerateTableFromReviewWithDiffHandler(BaseHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.generation_service = GenerationService()
 
     def post(self):
         try:
@@ -206,9 +214,13 @@ class GenerateTableFromReviewWithDiffHandler(BaseHandler):
             section_name = body.get('sectionName', 'Table')
             section_type = body.get('sectionType', None)
             guidelines = body.get('guidelines', None)
+            model_id = body.get('modelId', None)
+            
+            # Create generation service with specified model
+            generation_service = GenerationService(model_id)
             
             # Use table review service method
-            result = self.generation_service.review_table_with_diff(
+            result = generation_service.review_table_with_diff(
                 draft, review_notes, section_name, section_type, guidelines
             )
             
@@ -229,7 +241,6 @@ class GenerateTableFromReviewWithDiffHandler(BaseHandler):
 class GenerateReviewHandler(BaseHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.generation_service = GenerationService()
 
     def post(self):
         try:
@@ -238,9 +249,13 @@ class GenerateReviewHandler(BaseHandler):
             section_name = body.get('sectionName', 'Section')
             section_type = body.get('sectionType', 'default')
             guidelines = body.get('guidelines', None)
+            model_id = body.get('modelId', None)
+            
+            # Create generation service with specified model
+            generation_service = GenerationService(model_id)
             
             # Use generation service with section context
-            review = self.generation_service.generate_review_suggestions(
+            review = generation_service.generate_review_suggestions(
                 draft, section_name, section_type, guidelines
             )
             
@@ -349,7 +364,6 @@ class UploadTemplateHandler(BaseHandler):
 class GenerateReviewForSelectionHandler(BaseHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.generation_service = GenerationService()
 
     def post(self):
         try:
@@ -361,9 +375,13 @@ class GenerateReviewForSelectionHandler(BaseHandler):
             section_type = body.get('sectionType', 'default')
             guidelines = body.get('guidelines', None)
             full_draft = body.get('fullDraft', None)
+            model_id = body.get('modelId', None)
+            
+            # Create generation service with specified model
+            generation_service = GenerationService(model_id)
             
             # Use selection review service method
-            result = self.generation_service.review_text_selection(
+            result = generation_service.review_text_selection(
                 selected_text, context_before, context_after, section_name, section_type, guidelines, full_draft
             )
             
@@ -384,7 +402,6 @@ class GenerateReviewForSelectionHandler(BaseHandler):
 class ApplyReviewToSelectionWithDiffHandler(BaseHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.generation_service = GenerationService()
 
     def post(self):
         try:
@@ -397,9 +414,13 @@ class ApplyReviewToSelectionWithDiffHandler(BaseHandler):
             section_name = body.get('sectionName', 'Selection')
             section_type = body.get('sectionType', 'default')
             guidelines = body.get('guidelines', None)
+            model_id = body.get('modelId', None)
+            
+            # Create generation service with specified model
+            generation_service = GenerationService(model_id)
             
             # Use selection application service method
-            result = self.generation_service.apply_review_to_selection_with_diff(
+            result = generation_service.apply_review_to_selection_with_diff(
                 full_draft, selected_text, selection_start, selection_end, 
                 review_notes, section_name, section_type, guidelines
             )

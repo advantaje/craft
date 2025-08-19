@@ -16,9 +16,11 @@ import {
   TextField,
   IconButton,
   Menu,
-  MenuItem
+  MenuItem,
+  Select,
+  FormControl
 } from '@material-ui/core';
-import { Add as AddIcon, Check as CheckIcon, GetApp as DownloadIcon, Close as CloseIcon, Block as BlockIcon } from '@material-ui/icons';
+import { Add as AddIcon, Check as CheckIcon, GetApp as DownloadIcon, Close as CloseIcon, Block as BlockIcon, Delete as DeleteIcon } from '@material-ui/icons';
 import { useDocumentSections } from '../hooks/useDocumentSections';
 import { DocumentInfo, SectionData, TemplateInfo } from '../types/document.types';
 import DocumentSetup from './DocumentSetup';
@@ -26,6 +28,8 @@ import SectionWorkflow from './SectionWorkflow';
 import TableWorkflow from './TableWorkflow';
 import FileGenerationModal from './FileGenerationModal';
 import { getTableConfiguration } from '../config/tableConfigurations';
+import { AVAILABLE_MODELS, DEFAULT_MODEL } from '../config/modelConfigurations';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -42,17 +46,32 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
 };
 
 const Craft: React.FC = () => {
-  const [currentTab, setCurrentTab] = useState(0);
-  const [addTabDialog, setAddTabDialog] = useState(false);
-  const [newTabName, setNewTabName] = useState('');
-  const [newTabTemplateTag, setNewTabTemplateTag] = useState('');
-  const [documentData, setDocumentData] = useState<DocumentInfo | null>(null);
-  const [documentId, setDocumentId] = useState('');
-  const [showGenerationModal, setShowGenerationModal] = useState(false);
-  const [templateInfo, setTemplateInfo] = useState<TemplateInfo>({
+  // Persistent state that survives browser sessions
+  const [currentTab, setCurrentTab] = useLocalStorage<number>('craft-current-tab', 0);
+  const [documentData, setDocumentData] = useLocalStorage<DocumentInfo | null>('craft-document-data', null);
+  const [documentId, setDocumentId] = useLocalStorage<string>('craft-document-id', '');
+  const [templateInfo, setTemplateInfo] = useLocalStorage<TemplateInfo>('craft-template-info', {
     name: 'template-tagged',
     type: 'default'
   });
+  const [selectedModel, setSelectedModel] = useLocalStorage<string>(
+    'craft-selected-model',
+    DEFAULT_MODEL,
+    {
+      serialize: (value) => value,
+      deserialize: (value) => {
+        // Validate the model exists in available models
+        return AVAILABLE_MODELS.some(m => m.id === value) ? value : DEFAULT_MODEL;
+      }
+    }
+  );
+  
+  // Temporary UI state (doesn't need persistence)
+  const [addTabDialog, setAddTabDialog] = useState(false);
+  const [newTabName, setNewTabName] = useState('');
+  const [newTabTemplateTag, setNewTabTemplateTag] = useState('');
+  const [showGenerationModal, setShowGenerationModal] = useState(false);
+  const [showClearDataDialog, setShowClearDataDialog] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ mouseX: number; mouseY: number; sectionId: string } | null>(null);
   
   const {
@@ -63,7 +82,8 @@ const Craft: React.FC = () => {
     toggleSectionCompletion,
     addSection,
     removeSection,
-    canRemoveSection
+    canRemoveSection,
+    resetAllSections
   } = useDocumentSections();
 
   // Check if document setup is complete (document found + template selected/uploaded)
@@ -160,6 +180,24 @@ const Craft: React.FC = () => {
     }
   };
 
+  const handleModelChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+    const newModel = event.target.value as string;
+    setSelectedModel(newModel);
+  };
+
+  const handleClearAllData = () => {
+    // Clear all localStorage data
+    setDocumentData(null);
+    setDocumentId('');
+    setTemplateInfo({ name: 'template-tagged', type: 'default' });
+    setCurrentTab(0);
+    setSelectedModel(DEFAULT_MODEL);
+    resetAllSections();
+    
+    // Close the dialog
+    setShowClearDataDialog(false);
+  };
+
   return (
     <>
       <AppBar position="static">
@@ -167,6 +205,53 @@ const Craft: React.FC = () => {
           <Typography variant="h6" style={{ flexGrow: 1 }}>
             CRAFT - Document Planning & Drafting
           </Typography>
+          
+          {/* Model Selector */}
+          <Box mr={2}>
+            <FormControl variant="outlined" size="small">
+              <Select
+                value={selectedModel}
+                onChange={handleModelChange}
+                style={{ 
+                  color: 'white',
+                  minWidth: 150,
+                  fontSize: '0.875rem'
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      marginTop: '8px'
+                    }
+                  }
+                }}
+              >
+                {AVAILABLE_MODELS.map((model) => (
+                  <MenuItem key={model.id} value={model.id}>
+                    {model.displayName}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+
+          {/* Clear Data Button */}
+          <Box mr={2}>
+            <Button
+              size="small"
+              onClick={() => setShowClearDataDialog(true)}
+              style={{ 
+                color: 'white',
+                textTransform: 'none',
+                minWidth: 'auto',
+                padding: '4px 8px'
+              }}
+              startIcon={<DeleteIcon style={{ fontSize: '16px' }} />}
+              title="Clear all saved data"
+            >
+              Clear Data
+            </Button>
+          </Box>
+
           {documentData && (
             <Box display="flex" alignItems="center" style={{ color: 'white' }}>
               {documentData['Review ID'] && (
@@ -328,6 +413,7 @@ const Craft: React.FC = () => {
                   onToggleCompletion={toggleSectionCompletion}
                   onTemplateTagUpdate={updateSectionTemplateTag}
                   onGuidelinesUpdate={updateSectionGuidelines}
+                  selectedModel={selectedModel}
                 />
               ) : (
                 <SectionWorkflow
@@ -336,6 +422,7 @@ const Craft: React.FC = () => {
                   onToggleCompletion={toggleSectionCompletion}
                   onTemplateTagUpdate={updateSectionTemplateTag}
                   onGuidelinesUpdate={updateSectionGuidelines}
+                  selectedModel={selectedModel}
                 />
               )}
             </TabPanel>
@@ -345,7 +432,7 @@ const Craft: React.FC = () => {
         {/* Global Tip */}
         <Box mt={4} mb={2} textAlign="center">
           <Typography variant="body2" color="textSecondary" style={{ fontStyle: 'italic' }}>
-            💡 Need help? This tool uses AI to assist with document creation. Generate outlines, create drafts, and iteratively improve content with AI reviews. 
+            💡 Need help? 
             <Button 
               component="a"
               href="/#/about"
@@ -423,6 +510,44 @@ const Craft: React.FC = () => {
           }
         </MenuItem>
       </Menu>
+
+      {/* Clear Data Confirmation Dialog */}
+      <Dialog
+        open={showClearDataDialog}
+        onClose={() => setShowClearDataDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Clear All Saved Data</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" style={{ marginBottom: '1rem' }}>
+            Are you sure you want to clear all saved data? This will remove:
+          </Typography>
+          <Typography component="ul" variant="body2" style={{ marginLeft: '1rem', marginBottom: '1rem' }}>
+            <li>All section content (notes, drafts, reviews)</li>
+            <li>Document setup information</li>
+            <li>Template preferences</li>
+            <li>Custom sections you've added</li>
+            <li>Model selection</li>
+          </Typography>
+          <Typography variant="body2" color="error">
+            <strong>This action cannot be undone.</strong>
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowClearDataDialog(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleClearAllData} 
+            color="secondary"
+            variant="contained"
+            startIcon={<DeleteIcon />}
+          >
+            Clear All Data
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
