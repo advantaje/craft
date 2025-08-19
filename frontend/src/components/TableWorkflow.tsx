@@ -41,6 +41,8 @@ interface TableWorkflowProps {
   section: DocumentSection;
   tableConfig: TableConfiguration;
   onSectionUpdate: (sectionId: string, field: keyof SectionData, value: string) => void;
+  onSelectedRowsUpdate: (sectionId: string, selectedRows: number[]) => void;
+  onSelectedRowsClear: (sectionId: string) => void;
   onToggleCompletion: (sectionId: string, completionType?: 'normal' | 'empty' | 'unexclude') => void;
   onTemplateTagUpdate: (sectionId: string, templateTag: string) => void;
   onGuidelinesUpdate: (sectionId: string, guidelines: any) => void;
@@ -51,6 +53,8 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
   section,
   tableConfig,
   onSectionUpdate,
+  onSelectedRowsUpdate,
+  onSelectedRowsClear,
   onToggleCompletion,
   onTemplateTagUpdate,
   onGuidelinesUpdate,
@@ -58,7 +62,8 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
 }) => {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
-  const [selectedRowIndices, setSelectedRowIndices] = useState<number[]>([]);
+  // Use persistent selected rows from section data instead of local state
+  const selectedRowIndices = section.data.selectedRows || [];
   const [comparisonDialog, setComparisonDialog] = useState({
     open: false,
     proposedDraft: '',
@@ -136,6 +141,8 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
         modelId: selectedModel
       });
       onSectionUpdate(section.id, 'draft', result);
+      // Clear row selection when generating new table since content is completely replaced
+      onSelectedRowsClear(section.id);
     } catch (error) {
       console.error('Error generating table data:', error);
     } finally {
@@ -316,7 +323,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
       diffSummary: undefined
     });
     // Clear selection after applying changes
-    setSelectedRowIndices([]);
+    onSelectedRowsClear(section.id);
   };
 
   const handleCancelChanges = () => {
@@ -333,7 +340,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
   };
 
   const handleRowSelect = (indices: number[]) => {
-    setSelectedRowIndices(indices);
+    onSelectedRowsUpdate(section.id, indices);
   };
 
   const handleAcceptRowChanges = () => {
@@ -361,7 +368,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
       diffSummary: undefined
     });
     // Clear selection after applying changes
-    setSelectedRowIndices([]);
+    onSelectedRowsClear(section.id);
   };
 
   const handleCancelRowChanges = () => {

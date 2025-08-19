@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Box,
   Button,
@@ -22,7 +22,7 @@ import {
   Block as BlockIcon,
   Settings as SettingsIcon 
 } from '@material-ui/icons';
-import { DocumentSection, SectionData, DiffSegment, DiffSummary } from '../types/document.types';
+import { DocumentSection, SectionData, DiffSegment, DiffSummary, TextSelection } from '../types/document.types';
 import { 
   generateDraftFromNotes, 
   generateReview, 
@@ -38,6 +38,8 @@ import { getSectionDefaultGuidelines, SectionGuidelines } from '../config/defaul
 interface SectionWorkflowProps {
   section: DocumentSection;
   onSectionUpdate: (sectionId: string, field: keyof SectionData, value: string) => void;
+  onSelectionUpdate: (sectionId: string, selection: TextSelection | null) => void;
+  onSelectionClear: (sectionId: string) => void;
   onToggleCompletion: (sectionId: string, completionType?: 'normal' | 'empty' | 'unexclude') => void;
   onTemplateTagUpdate: (sectionId: string, templateTag: string) => void;
   onGuidelinesUpdate: (sectionId: string, guidelines: any) => void;
@@ -47,6 +49,8 @@ interface SectionWorkflowProps {
 const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
   section,
   onSectionUpdate,
+  onSelectionUpdate,
+  onSelectionClear,
   onToggleCompletion,
   onTemplateTagUpdate,
   onGuidelinesUpdate,
@@ -61,13 +65,23 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
     diffSummary: undefined as DiffSummary | undefined
   });
   const [guidelinesModalOpen, setGuidelinesModalOpen] = useState(false);
-  const [textSelection, setTextSelection] = useState<{
-    text: string;
-    start: number;
-    end: number;
-  } | null>(null);
+  // Use persistent selection from section data instead of local state
+  const textSelection = section.data.selection || null;
+  const draftTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const steps = ['Notes', 'Draft & Review Cycle'];
+
+  // Restore textarea selection when component mounts or selection data changes
+  useEffect(() => {
+    if (textSelection && draftTextareaRef.current) {
+      const textarea = draftTextareaRef.current;
+      // Use setTimeout to ensure the textarea is fully rendered
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(textSelection.start, textSelection.end);
+      }, 0);
+    }
+  }, [textSelection]);
 
   const getActiveStep = (): number => {
     if (focusedField === `notes-${section.id}`) return 0;
@@ -99,6 +113,8 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
         modelId: selectedModel
       });
       onSectionUpdate(section.id, 'draft', result);
+      // Clear selection when generating new draft since content is completely replaced
+      onSelectionClear(section.id);
     } catch (error) {
       console.error('Error generating draft:', error);
     } finally {
@@ -157,6 +173,8 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
 
   const handleAcceptChanges = () => {
     onSectionUpdate(section.id, 'draft', comparisonDialog.proposedDraft);
+    // Clear selection when draft content changes significantly
+    onSelectionClear(section.id);
     setComparisonDialog({ 
       open: false, 
       proposedDraft: '',
@@ -195,11 +213,11 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
     // Handle selection immediately for better UX
     if (start !== null && end !== null && start !== end) {
       const selectedText = section.data.draft.substring(start, end);
-      setTextSelection({ text: selectedText, start, end });
+      onSelectionUpdate(section.id, { text: selectedText, start, end });
     } else {
-      setTextSelection(null);
+      onSelectionUpdate(section.id, null);
     }
-  }, [section.data.draft]);
+  }, [section.data.draft, section.id, onSelectionUpdate]);
 
   // Immediate selection handler for real-time feedback
   const handleSelectionChange = useCallback((event: React.SyntheticEvent) => {
@@ -447,6 +465,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
                     onMouseUp={handleTextSelection}
                     onKeyUp={handleTextSelection}
                     placeholder="Your draft content will appear here, or write it manually..."
+                    inputRef={draftTextareaRef}
                   />
                 </Grid>
 

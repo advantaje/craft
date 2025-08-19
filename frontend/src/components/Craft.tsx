@@ -77,6 +77,10 @@ const Craft: React.FC = () => {
   const {
     sections,
     updateSectionData,
+    updateSectionSelection,
+    clearSectionSelection,
+    updateSectionSelectedRows,
+    clearSectionSelectedRows,
     updateSectionTemplateTag,
     updateSectionGuidelines,
     toggleSectionCompletion,
@@ -419,6 +423,8 @@ const Craft: React.FC = () => {
                   section={section}
                   tableConfig={getTableConfiguration(section.type)}
                   onSectionUpdate={handleSectionUpdate}
+                  onSelectedRowsUpdate={updateSectionSelectedRows}
+                  onSelectedRowsClear={clearSectionSelectedRows}
                   onToggleCompletion={toggleSectionCompletion}
                   onTemplateTagUpdate={updateSectionTemplateTag}
                   onGuidelinesUpdate={updateSectionGuidelines}
@@ -428,6 +434,8 @@ const Craft: React.FC = () => {
                 <SectionWorkflow
                   section={section}
                   onSectionUpdate={handleSectionUpdate}
+                  onSelectionUpdate={updateSectionSelection}
+                  onSelectionClear={clearSectionSelection}
                   onToggleCompletion={toggleSectionCompletion}
                   onTemplateTagUpdate={updateSectionTemplateTag}
                   onGuidelinesUpdate={updateSectionGuidelines}

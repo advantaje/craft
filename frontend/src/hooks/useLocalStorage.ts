@@ -35,16 +35,22 @@ export function useLocalStorage<T>(
   // Save to localStorage whenever value changes
   const setValue = useCallback((value: T | ((val: T) => T)) => {
     try {
-      // Allow value to be a function for functional updates
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      
-      // Save to localStorage
-      window.localStorage.setItem(key, serialize(valueToStore));
+      if (value instanceof Function) {
+        // For functional updates, let setStoredValue handle it with current state
+        setStoredValue((prevValue) => {
+          const valueToStore = value(prevValue);
+          window.localStorage.setItem(key, serialize(valueToStore));
+          return valueToStore;
+        });
+      } else {
+        // For direct value updates
+        setStoredValue(value);
+        window.localStorage.setItem(key, serialize(value));
+      }
     } catch (error) {
       onError(error as Error, 'save');
     }
-  }, [key, serialize, storedValue, onError]);
+  }, [key, serialize, onError]);
 
   // Clear the value from localStorage and reset to initial
   const clearValue = useCallback(() => {
@@ -75,19 +81,22 @@ export function useDebouncedLocalStorage<T>(
 ): [T, (value: T | ((val: T) => T)) => void, () => void] {
   
   const [storedValue, setStoredValue, clearValue] = useLocalStorage<T>(key, initialValue, options);
-  const [pendingValue, setPendingValue] = useState<T | null>(null);
 
   // Debounced update function
   const setDebouncedValue = useCallback((value: T | ((val: T) => T)) => {
-    const newValue = typeof value === 'function' ? (value as (val: T) => T)(storedValue) : value;
-    setPendingValue(newValue);
+    if (typeof value === 'function') {
+      // For functional updates, get current value first
+      const currentValue = storedValue;
+      const newValue = (value as (val: T) => T)(currentValue);
+      setStoredValue(newValue);
+    } else {
+      // For direct value updates
+      setStoredValue(value);
+    }
     
-    // Update UI immediately
-    setStoredValue(newValue);
-    
-    // Clear previous timeout
+    // Clear previous timeout - simplified without pendingValue tracking
     const timeoutId = setTimeout(() => {
-      setPendingValue(null);
+      // No-op for now, keeping structure for future debouncing needs
     }, delay);
 
     return () => clearTimeout(timeoutId);

@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { DocumentSection, SectionData } from '../types/document.types';
+import { useCallback } from 'react';
+import { DocumentSection, SectionData, TextSelection } from '../types/document.types';
 import { getSectionDefaultGuidelines, SectionGuidelines } from '../config/defaultGuidelines';
 import { useLocalStorage } from './useLocalStorage';
 
@@ -77,7 +77,53 @@ export function useDocumentSections() {
           : section
       )
     );
-  }, []);
+  }, [setSections]);
+
+  const updateSectionSelection = useCallback((
+    sectionId: string,
+    selection: TextSelection | null
+  ) => {
+    setSections(prevSections =>
+      prevSections.map(section =>
+        section.id === sectionId
+          ? { ...section, data: { ...section.data, selection: selection || undefined } }
+          : section
+      )
+    );
+  }, [setSections]);
+
+  const clearSectionSelection = useCallback((sectionId: string) => {
+    setSections(prevSections =>
+      prevSections.map(section =>
+        section.id === sectionId
+          ? { ...section, data: { ...section.data, selection: undefined } }
+          : section
+      )
+    );
+  }, [setSections]);
+
+  const updateSectionSelectedRows = useCallback((
+    sectionId: string,
+    selectedRows: number[]
+  ) => {
+    setSections(prevSections =>
+      prevSections.map(section =>
+        section.id === sectionId
+          ? { ...section, data: { ...section.data, selectedRows: selectedRows.length > 0 ? selectedRows : undefined } }
+          : section
+      )
+    );
+  }, [setSections]);
+
+  const clearSectionSelectedRows = useCallback((sectionId: string) => {
+    setSections(prevSections =>
+      prevSections.map(section =>
+        section.id === sectionId
+          ? { ...section, data: { ...section.data, selectedRows: undefined } }
+          : section
+      )
+    );
+  }, [setSections]);
 
   const toggleSectionCompletion = useCallback((sectionId: string, completionType: 'normal' | 'empty' | 'unexclude' = 'normal') => {
     setSections(prevSections =>
@@ -113,7 +159,7 @@ export function useDocumentSections() {
         };
       })
     );
-  }, []);
+  }, [setSections]);
 
   const addSection = useCallback((name: string, templateTag?: string) => {
     const newSection: DocumentSection = {
@@ -127,13 +173,13 @@ export function useDocumentSections() {
     };
     setSections(prevSections => [...prevSections, newSection]);
     return newSection;
-  }, []);
+  }, [setSections]);
 
   const removeSection = useCallback((sectionId: string) => {
     setSections(prevSections =>
       prevSections.filter(section => section.id !== sectionId)
     );
-  }, []);
+  }, [setSections]);
 
   const canRemoveSection = useCallback((sectionId: string) => {
     // Don't allow removal of default sections (Background, Product, Usage, Model Limitations, Model Risk Issues)
@@ -149,7 +195,7 @@ export function useDocumentSections() {
           : section
       )
     );
-  }, []);
+  }, [setSections]);
 
   const updateSectionGuidelines = useCallback((sectionId: string, guidelines: SectionGuidelines) => {
     setSections(prevSections =>
@@ -159,7 +205,7 @@ export function useDocumentSections() {
           : section
       )
     );
-  }, []);
+  }, [setSections]);
 
   const getSectionById = useCallback((sectionId: string) => {
     return sections.find(section => section.id === sectionId);
@@ -172,6 +218,10 @@ export function useDocumentSections() {
   return {
     sections,
     updateSectionData,
+    updateSectionSelection,
+    clearSectionSelection,
+    updateSectionSelectedRows,
+    clearSectionSelectedRows,
     updateSectionTemplateTag,
     updateSectionGuidelines,
     toggleSectionCompletion,

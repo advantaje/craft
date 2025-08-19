@@ -1,7 +1,15 @@
+export interface TextSelection {
+  text: string;
+  start: number;
+  end: number;
+}
+
 export interface SectionData {
   notes: string;
   draft: string;
   reviewNotes: string;
+  selection?: TextSelection;
+  selectedRows?: number[];
 }
 
 export interface DocumentSection {
