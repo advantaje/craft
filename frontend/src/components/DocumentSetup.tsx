@@ -93,9 +93,10 @@ const DocumentSetup: React.FC<DocumentSetupProps> = ({
     try {
       const result = await lookupReview({ id: documentId });
       onDocumentFound?.(result);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error looking up review:', error);
-      setError('Failed to lookup review. Please try again.');
+      // Use the specific error message from the API service
+      setError(error.message || 'Failed to lookup review. Please try again.');
       onDocumentFound?.(null);
     } finally {
       setIsLoading(false);
@@ -140,9 +141,10 @@ const DocumentSetup: React.FC<DocumentSetupProps> = ({
         isUploaded: true
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading template:', error);
-      setUploadError('Failed to upload template. Please try again.');
+      // Use specific error message if available, otherwise provide generic message
+      setUploadError(error.message || 'Failed to upload template. Please try again.');
     } finally {
       setUploading(false);
     }

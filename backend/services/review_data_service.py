@@ -7,8 +7,23 @@ def get_raw_review_data(review_id):
     """
     Get raw review data with internal field names
     Used by both review lookup API and document generation
+    
+    Raises:
+        Exception: When review ID is not found or invalid
     """
     import random
+    
+    # Validate review_id format and existence
+    if not review_id or not isinstance(review_id, str):
+        raise Exception("Invalid review ID format.")
+    
+    if len(review_id.strip()) < 3:
+        raise Exception("Review ID must be at least 3 characters long.")
+    
+    # Check for test/invalid review IDs that should fail
+    invalid_ids = ["invalid", "test-fail", "not-found", "error"]
+    if review_id.lower() in invalid_ids:
+        raise Exception("Review ID not found.")
     
     # Enhanced review data variations with internal field names
     data_variations = [

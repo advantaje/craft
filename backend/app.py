@@ -74,8 +74,15 @@ class ReviewLookupHandler(BaseHandler):
             self.set_header("Content-Type", "application/json")
             self.write(json.dumps(response))
         except Exception as e:
-            self.set_status(500)
-            self.write(json.dumps({"error": str(e)}))
+            error_message = str(e)
+            # Set appropriate HTTP status based on error type
+            if "not found" in error_message.lower():
+                self.set_status(404)
+            elif "invalid" in error_message.lower() or "must be at least" in error_message.lower():
+                self.set_status(400)
+            else:
+                self.set_status(500)
+            self.write(json.dumps({"error": error_message}))
     
     def get_review_data(self, review_id):
         """

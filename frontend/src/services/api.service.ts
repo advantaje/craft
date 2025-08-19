@@ -37,8 +37,17 @@ export async function getHello(): Promise<HelloResponse> {
 }
 
 export async function lookupReview(request: ReviewLookupRequest): Promise<DocumentInfo> {
-  const response = await axiosInstance.get<ApiResponse<DocumentInfo>>(`/api/review-lookup?id=${encodeURIComponent(request.id)}`);
-  return response.data.result;
+  try {
+    const response = await axiosInstance.get<ApiResponse<DocumentInfo>>(`/api/review-lookup?id=${encodeURIComponent(request.id)}`);
+    return response.data.result;
+  } catch (error: any) {
+    // Handle HTTP error responses from backend
+    if (error.response?.data?.error) {
+      throw new Error(error.response.data.error);
+    }
+    // Generic fallback for network or other errors
+    throw new Error('Failed to lookup review. Please check your connection and try again.');
+  }
 }
 
 export async function generateReview(request: GenerateReviewRequest): Promise<string> {
