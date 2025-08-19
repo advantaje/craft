@@ -9,8 +9,8 @@ export interface ModelConfig {
 }
 
 export const AVAILABLE_MODELS: ModelConfig[] = [
-  { id: 'o4-mini-2025-04-16', displayName: 'o4-mini' },
   { id: 'gpt-4.1-2025-04-14', displayName: 'GPT-4.1' },
+  { id: 'o4-mini-2025-04-16', displayName: 'o4-mini' },
   { id: 'gpt-4o-2024-08-06', displayName: 'GPT-4o' },
 ];
 

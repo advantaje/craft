@@ -67,15 +67,19 @@ export function useDebouncedLocalStorage<T>(
   key: string,
   initialValue: T,
   delay: number = 1000,
-  options: Parameters<typeof useLocalStorage>[2] = {}
+  options: {
+    serialize?: (value: T) => string;
+    deserialize?: (value: string) => T;
+    onError?: (error: Error, operation: 'load' | 'save') => void;
+  } = {}
 ): [T, (value: T | ((val: T) => T)) => void, () => void] {
   
-  const [storedValue, setStoredValue, clearValue] = useLocalStorage(key, initialValue, options);
+  const [storedValue, setStoredValue, clearValue] = useLocalStorage<T>(key, initialValue, options);
   const [pendingValue, setPendingValue] = useState<T | null>(null);
 
   // Debounced update function
   const setDebouncedValue = useCallback((value: T | ((val: T) => T)) => {
-    const newValue = value instanceof Function ? value(storedValue) : value;
+    const newValue = typeof value === 'function' ? (value as (val: T) => T)(storedValue) : value;
     setPendingValue(newValue);
     
     // Update UI immediately

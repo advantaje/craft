@@ -202,75 +202,84 @@ const Craft: React.FC = () => {
     <>
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="h6" style={{ flexGrow: 1 }}>
-            CRAFT - Document Planning & Drafting
-          </Typography>
+          {/* Left Section - App Title */}
+          <Box display="flex" alignItems="center">
+            <Typography variant="h6">
+              CRAFT - Document Planning & Drafting
+            </Typography>
+          </Box>
           
-          {/* Model Selector */}
-          <Box mr={2}>
-            <FormControl variant="outlined" size="small">
-              <Select
-                value={selectedModel}
-                onChange={handleModelChange}
+          {/* Center Section - Document Info */}
+          <Box display="flex" alignItems="center" justifyContent="center" style={{ flexGrow: 1 }}>
+            {documentData && (
+              <Box display="flex" alignItems="center" style={{ color: 'white' }}>
+                {documentData['Review ID'] && (
+                  <Typography variant="body2" style={{ marginRight: '1.5rem' }}>
+                    <strong>Review ID:</strong> {documentData['Review ID'].value}
+                  </Typography>
+                )}
+                {documentData['Model Name'] && (
+                  <Typography variant="body2" style={{ marginRight: '1.5rem' }}>
+                    <strong>Model Name:</strong> {documentData['Model Name'].value}
+                  </Typography>
+                )}
+                {documentData['Review Lead'] && (
+                  <Typography variant="body2">
+                    <strong>Review Lead:</strong> {documentData['Review Lead'].value}
+                  </Typography>
+                )}
+              </Box>
+            )}
+          </Box>
+
+          {/* Right Section - Controls */}
+          <Box display="flex" alignItems="center">
+            {/* Model Selector */}
+            <Box mr={1}>
+              <FormControl variant="outlined" size="small">
+                <Select
+                  value={selectedModel}
+                  onChange={handleModelChange}
+                  style={{ 
+                    color: 'white',
+                    minWidth: 140,
+                    fontSize: '0.875rem'
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        marginTop: '8px'
+                      }
+                    }
+                  }}
+                >
+                  {AVAILABLE_MODELS.map((model) => (
+                    <MenuItem key={model.id} value={model.id}>
+                      {model.displayName}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+
+            {/* Clear Data Button */}
+            <Box>
+              <Button
+                size="small"
+                onClick={() => setShowClearDataDialog(true)}
                 style={{ 
                   color: 'white',
-                  minWidth: 150,
-                  fontSize: '0.875rem'
+                  textTransform: 'none',
+                  minWidth: 'auto',
+                  padding: '4px 8px'
                 }}
-                MenuProps={{
-                  PaperProps: {
-                    style: {
-                      marginTop: '8px'
-                    }
-                  }
-                }}
+                startIcon={<DeleteIcon style={{ fontSize: '16px' }} />}
+                title="Clear all saved data"
               >
-                {AVAILABLE_MODELS.map((model) => (
-                  <MenuItem key={model.id} value={model.id}>
-                    {model.displayName}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-
-          {/* Clear Data Button */}
-          <Box mr={2}>
-            <Button
-              size="small"
-              onClick={() => setShowClearDataDialog(true)}
-              style={{ 
-                color: 'white',
-                textTransform: 'none',
-                minWidth: 'auto',
-                padding: '4px 8px'
-              }}
-              startIcon={<DeleteIcon style={{ fontSize: '16px' }} />}
-              title="Clear all saved data"
-            >
-              Clear Data
-            </Button>
-          </Box>
-
-          {documentData && (
-            <Box display="flex" alignItems="center" style={{ color: 'white' }}>
-              {documentData['Review ID'] && (
-                <Typography variant="body2" style={{ marginRight: '1rem' }}>
-                  <strong>Review ID:</strong> {documentData['Review ID'].value}
-                </Typography>
-              )}
-              {documentData['Model Name'] && (
-                <Typography variant="body2" style={{ marginRight: '1rem' }}>
-                  <strong>Model Name:</strong> {documentData['Model Name'].value}
-                </Typography>
-              )}
-              {documentData['Review Lead'] && (
-                <Typography variant="body2">
-                  <strong>Review Lead:</strong> {documentData['Review Lead'].value}
-                </Typography>
-              )}
+                Clear Data
+              </Button>
             </Box>
-          )}
+          </Box>
         </Toolbar>
       </AppBar>
 
