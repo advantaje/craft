@@ -50,7 +50,7 @@ const Craft: React.FC = () => {
   const [currentTab, setCurrentTab] = useLocalStorage<number>('craft-current-tab', 0);
   const [documentData, setDocumentData] = useLocalStorage<DocumentInfo | null>('craft-document-data', null);
   const [documentId, setDocumentId] = useLocalStorage<string>('craft-document-id', '');
-  const [templateInfo, setTemplateInfo] = useLocalStorage<TemplateInfo>('craft-template-info', {
+  const [templateInfo, setTemplateInfo] = useState<TemplateInfo>({
     name: 'template-tagged',
     type: 'default'
   });

@@ -14,8 +14,8 @@ from .template_service import create_default_template
 class DocumentGenerationService:
     """Handles document file generation from section data"""
     
-    def __init__(self, uploaded_templates=None):
-        self.uploaded_templates = uploaded_templates or {}
+    def __init__(self, uploaded_templates):
+        self.uploaded_templates = uploaded_templates
     
     
     def generate_docx_document_with_progress(self, document_id: str, document_data: dict, sections: list, progress_callback=None, template_info=None):
