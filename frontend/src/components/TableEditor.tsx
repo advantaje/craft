@@ -14,7 +14,7 @@ import {
   Button,
   Box,
   FormControl,
-  Radio
+  Checkbox
 } from '@material-ui/core';
 import { Delete as DeleteIcon, Add as AddIcon } from '@material-ui/icons';
 import { TableColumn, TableData } from '../types/document.types';
@@ -24,8 +24,8 @@ interface TableEditorProps {
   columns: TableColumn[];
   onChange: (data: TableData) => void;
   readOnly?: boolean;
-  selectedRowIndex?: number;
-  onRowSelect?: (index: number) => void;
+  selectedRowIndices?: number[];
+  onRowSelect?: (indices: number[]) => void;
   showRowSelection?: boolean;
 }
 
@@ -34,7 +34,7 @@ const TableEditor: React.FC<TableEditorProps> = ({
   columns, 
   onChange, 
   readOnly = false,
-  selectedRowIndex,
+  selectedRowIndices = [],
   onRowSelect,
   showRowSelection = false
 }) => {
@@ -66,6 +66,39 @@ const TableEditor: React.FC<TableEditorProps> = ({
     onChange({ rows: newRows });
   };
 
+  const handleRowSelection = (rowIndex: number) => {
+    if (!onRowSelect) return;
+    
+    const isSelected = selectedRowIndices.includes(rowIndex);
+    let newSelection: number[];
+    
+    if (isSelected) {
+      // Remove from selection
+      newSelection = selectedRowIndices.filter(index => index !== rowIndex);
+    } else {
+      // Add to selection
+      newSelection = [...selectedRowIndices, rowIndex];
+    }
+    
+    onRowSelect(newSelection);
+  };
+
+  const handleSelectAll = () => {
+    if (!onRowSelect) return;
+    
+    const allSelected = selectedRowIndices.length === data.rows.length;
+    if (allSelected) {
+      // Deselect all
+      onRowSelect([]);
+    } else {
+      // Select all
+      onRowSelect(data.rows.map((_, index) => index));
+    }
+  };
+
+  const isAllSelected = selectedRowIndices.length === data.rows.length && data.rows.length > 0;
+  const isIndeterminate = selectedRowIndices.length > 0 && selectedRowIndices.length < data.rows.length;
+
   return (
     <Box>
       <TableContainer component={Paper} elevation={2}>
@@ -74,7 +107,13 @@ const TableEditor: React.FC<TableEditorProps> = ({
             <TableRow>
               {showRowSelection && (
                 <TableCell style={{ fontWeight: 'bold', width: '50px' }}>
-                  Select
+                  <Checkbox
+                    checked={isAllSelected}
+                    indeterminate={isIndeterminate}
+                    onChange={handleSelectAll}
+                    size="small"
+                    color="primary"
+                  />
                 </TableCell>
               )}
               {columns.map(col => (
@@ -98,14 +137,14 @@ const TableEditor: React.FC<TableEditorProps> = ({
                 key={rowIndex} 
                 hover
                 style={{
-                  backgroundColor: selectedRowIndex === rowIndex ? '#e3f2fd' : 'transparent'
+                  backgroundColor: selectedRowIndices.includes(rowIndex) ? '#e3f2fd' : 'transparent'
                 }}
               >
                 {showRowSelection && (
                   <TableCell>
-                    <Radio
-                      checked={selectedRowIndex === rowIndex}
-                      onChange={() => onRowSelect?.(rowIndex)}
+                    <Checkbox
+                      checked={selectedRowIndices.includes(rowIndex)}
+                      onChange={() => handleRowSelection(rowIndex)}
                       size="small"
                       color="primary"
                     />

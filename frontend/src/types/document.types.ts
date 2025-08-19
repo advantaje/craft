@@ -123,12 +123,43 @@ export interface GenerateRowReviewRequest {
   sectionName: string;
   sectionType?: string;
   guidelines?: string;
+  fullTableData?: TableData;
 }
 
 export interface GenerateRowReviewResponse {
   new_row: { [key: string]: string | number };
   original_formatted: string;
   new_formatted: string;
+  diff_segments: DiffSegment[];
+  diff_summary: DiffSummary;
+}
+
+// Text selection types
+export interface GenerateSelectionReviewRequest {
+  selectedText: string;
+  contextBefore: string;
+  contextAfter: string;
+  sectionName: string;
+  sectionType?: string;
+  guidelines?: string;
+  fullDraft?: string;
+}
+
+export interface ApplySelectionReviewRequest {
+  fullDraft: string;
+  selectedText: string;
+  selectionStart: number;
+  selectionEnd: number;
+  reviewNotes: string;
+  sectionName: string;
+  sectionType?: string;
+  guidelines?: string;
+}
+
+export interface ApplySelectionReviewResponse {
+  new_draft: string;
+  original_selection: string;
+  new_selection: string;
   diff_segments: DiffSegment[];
   diff_summary: DiffSummary;
 }

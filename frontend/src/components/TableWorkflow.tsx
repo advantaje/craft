@@ -56,7 +56,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
 }) => {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
-  const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
+  const [selectedRowIndices, setSelectedRowIndices] = useState<number[]>([]);
   const [comparisonDialog, setComparisonDialog] = useState({
     open: false,
     proposedDraft: '',
@@ -120,14 +120,6 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
     setLoading(prev => ({ ...prev, [operation]: state }));
   };
 
-  const formatRowForReview = (rowData: any, rowIndex: number): string => {
-    const formattedFields = tableConfig.columns.map(col => {
-      const value = rowData[col.id] || '';
-      return `${col.label}: ${value}`;
-    }).join('\n');
-    
-    return `Row #${rowIndex + 1}:\n${formattedFields}`;
-  };
 
   const handleGenerateTableFromNotes = async () => {
     if (!section.data.notes.trim()) return;
@@ -149,73 +141,55 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
   };
 
 
-  const handleGenerateReview = async () => {
-    // Require row selection for table reviews
-    if (!section.data.draft.trim() || selectedRowIndex === null) return;
+  const handleGenerateTableReview = async () => {
+    if (!section.data.draft.trim()) return;
     
-    const tableData = parseTableData(section.data.draft);
-    const rowData = tableData.rows[selectedRowIndex];
-    
-    if (!rowData) return;
-    
-    setLoadingState('generate-review', true);
+    setLoadingState('generate-table-review', true);
     try {
-      // Format the selected row for review
-      const formattedRowData = formatRowForReview(rowData, selectedRowIndex);
-      
       const result = await generateReview({ 
-        draft: formattedRowData,
-        sectionName: `${section.name} - Row #${selectedRowIndex + 1}`,
+        draft: section.data.draft,
+        sectionName: section.name,
         sectionType: tableConfig.sectionType,
         guidelines: section.guidelines?.review
       });
       onSectionUpdate(section.id, 'reviewNotes', result);
     } catch (error) {
-      console.error('Error generating review:', error);
+      console.error('Error generating table review:', error);
     } finally {
-      setLoadingState('generate-review', false);
+      setLoadingState('generate-table-review', false);
     }
   };
 
-  const handleApplyRowReview = async () => {
-    if (selectedRowIndex === null || !section.data.reviewNotes.trim()) return;
+  const handleGenerateSelectedRowsReview = async () => {
+    if (!section.data.draft.trim() || selectedRowIndices.length === 0) return;
     
     const tableData = parseTableData(section.data.draft);
-    const rowData = tableData.rows[selectedRowIndex];
     
-    if (!rowData) return;
-    
-    setLoadingState('apply-review', true);
+    setLoadingState('generate-selected-review', true);
     try {
-      const result = await generateRowFromReviewWithDiff({
-        rowData,
-        rowIndex: selectedRowIndex,
-        reviewNotes: section.data.reviewNotes,
-        columns: tableConfig.columns,
-        sectionName: section.name,
-        sectionType: tableConfig.sectionType,
-        guidelines: section.guidelines?.revision
-      });
+      // Create subset table with selected rows
+      const selectedRows = selectedRowIndices.map(index => tableData.rows[index]).filter(row => row);
+      const subsetTable = { rows: selectedRows };
+      const draftToReview = JSON.stringify(subsetTable);
       
-      // Open row comparison dialog using backend-formatted strings
-      setRowComparisonDialog({
-        open: true,
-        originalRow: result.original_formatted,
-        proposedRow: result.new_formatted,
-        diffSegments: result.diff_segments,
-        diffSummary: result.diff_summary
+      const result = await generateReview({ 
+        draft: draftToReview,
+        sectionName: `${section.name} - Selected Rows`,
+        sectionType: tableConfig.sectionType,
+        guidelines: section.guidelines?.review
       });
+      onSectionUpdate(section.id, 'reviewNotes', result);
     } catch (error) {
-      console.error('Error applying row review:', error);
+      console.error('Error generating selected rows review:', error);
     } finally {
-      setLoadingState('apply-review', false);
+      setLoadingState('generate-selected-review', false);
     }
   };
 
-  const handleApplyReviewToAllRows = async () => {
+  const handleApplyTableReview = async () => {
     if (!section.data.draft.trim() || !section.data.reviewNotes.trim()) return;
     
-    setLoadingState('apply-all-rows', true);
+    setLoadingState('apply-table-review', true);
     try {
       const result = await generateTableFromReviewWithDiff({
         draft: section.data.draft,
@@ -225,7 +199,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
         guidelines: section.guidelines?.revision
       });
       
-      // Open comparison dialog for full table with diff data
+      // Open comparison dialog for table with diff data
       setComparisonDialog({
         open: true,
         proposedDraft: result.new_draft,
@@ -233,11 +207,96 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
         diffSummary: result.diff_summary
       });
     } catch (error) {
-      console.error('Error applying review to all rows:', error);
+      console.error('Error applying table review:', error);
     } finally {
-      setLoadingState('apply-all-rows', false);
+      setLoadingState('apply-table-review', false);
     }
   };
+
+  const handleApplySelectedRowsReview = async () => {
+    if (selectedRowIndices.length === 0 || !section.data.reviewNotes.trim()) return;
+    
+    const tableData = parseTableData(section.data.draft);
+    
+    setLoadingState('apply-selected-review', true);
+    try {
+      if (selectedRowIndices.length === 1) {
+        // Single row: use existing row-specific API for better UX
+        const rowIndex = selectedRowIndices[0];
+        const rowData = tableData.rows[rowIndex];
+        
+        if (!rowData) return;
+        
+        const result = await generateRowFromReviewWithDiff({
+          rowData,
+          rowIndex,
+          reviewNotes: section.data.reviewNotes,
+          columns: tableConfig.columns,
+          sectionName: section.name,
+          sectionType: tableConfig.sectionType,
+          guidelines: section.guidelines?.revision,
+          fullTableData: tableData
+        });
+        
+        // Open row comparison dialog using backend-formatted strings
+        setRowComparisonDialog({
+          open: true,
+          originalRow: result.original_formatted,
+          proposedRow: result.new_formatted,
+          diffSegments: result.diff_segments,
+          diffSummary: result.diff_summary
+        });
+      } else {
+        // Multiple rows: create subset table and use table API
+        const selectedRows = selectedRowIndices.map(index => tableData.rows[index]).filter(row => row);
+        const subsetTable = { rows: selectedRows };
+        const draftToApply = JSON.stringify(subsetTable);
+        
+        const result = await generateTableFromReviewWithDiff({
+          draft: draftToApply,
+          reviewNotes: section.data.reviewNotes,
+          sectionName: `${section.name} - Selected Rows`,
+          sectionType: tableConfig.sectionType,
+          guidelines: section.guidelines?.revision
+        });
+        
+        // Parse the reviewed subset returned by LLM
+        const reviewedSubset = JSON.parse(result.new_draft);
+        
+        // Merge reviewed subset back into original table
+        const mergedTable = [...tableData.rows];
+        const sortedIndices = [...selectedRowIndices].sort((a, b) => a - b);
+        
+        // Remove original selected rows (in reverse order to maintain indices)
+        for (let i = sortedIndices.length - 1; i >= 0; i--) {
+          mergedTable.splice(sortedIndices[i], 1);
+        }
+        
+        // Insert reviewed rows at the position where the first selected row was
+        const insertPosition = sortedIndices[0];
+        mergedTable.splice(insertPosition, 0, ...reviewedSubset.rows);
+        
+        const finalTable = { rows: mergedTable };
+        const finalTableString = JSON.stringify(finalTable);
+        
+        // Reuse diff segments from the subset comparison
+        const diffSegments = result.diff_segments;
+        
+        // Open comparison dialog with merged table
+        setComparisonDialog({
+          open: true,
+          proposedDraft: finalTableString,
+          diffSegments: diffSegments,
+          diffSummary: result.diff_summary
+        });
+      }
+    } catch (error) {
+      console.error('Error applying selected rows review:', error);
+    } finally {
+      setLoadingState('apply-selected-review', false);
+    }
+  };
+
 
 
   const handleAcceptChanges = () => {
@@ -248,6 +307,8 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
       diffSegments: undefined,
       diffSummary: undefined
     });
+    // Clear selection after applying changes
+    setSelectedRowIndices([]);
   };
 
   const handleCancelChanges = () => {
@@ -263,8 +324,8 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
     onSectionUpdate(section.id, 'draft', JSON.stringify(tableData));
   };
 
-  const handleRowSelect = (index: number) => {
-    setSelectedRowIndex(index);
+  const handleRowSelect = (indices: number[]) => {
+    setSelectedRowIndices(indices);
   };
 
   const handleAcceptRowChanges = () => {
@@ -274,8 +335,9 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
     // Parse the new row data from the dialog
     try {
       const newRowData = JSON.parse(rowComparisonDialog.proposedRow);
-      if (selectedRowIndex !== null && selectedRowIndex < updatedRows.length) {
-        updatedRows[selectedRowIndex] = newRowData;
+      // For single row changes, update the first selected row
+      if (selectedRowIndices.length > 0 && selectedRowIndices[0] < updatedRows.length) {
+        updatedRows[selectedRowIndices[0]] = newRowData;
         const updatedTableData = { rows: updatedRows };
         onSectionUpdate(section.id, 'draft', JSON.stringify(updatedTableData));
       }
@@ -290,6 +352,8 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
       diffSegments: undefined,
       diffSummary: undefined
     });
+    // Clear selection after applying changes
+    setSelectedRowIndices([]);
   };
 
   const handleCancelRowChanges = () => {
@@ -441,24 +505,40 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
                 <Grid item xs={12}>
                   <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                     <Typography variant="h6">Table Data</Typography>
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      onClick={handleGenerateReview}
-                      disabled={!section.data.draft.trim() || selectedRowIndex === null || loading['generate-review']}
-                      size="small"
-                    >
-                      {loading['generate-review'] ? (
-                        <>
-                          <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
-                          Analyzing...
-                        </>
-                      ) : selectedRowIndex !== null ? (
-                        `Review Row #${selectedRowIndex + 1} →`
-                      ) : (
-                        'Select Row to Review →'
-                      )}
-                    </Button>
+                    <Box display="flex" style={{ gap: '8px' }}>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        onClick={handleGenerateTableReview}
+                        disabled={!section.data.draft.trim() || loading['generate-table-review']}
+                        size="small"
+                      >
+                        {loading['generate-table-review'] ? (
+                          <>
+                            <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
+                            Analyzing...
+                          </>
+                        ) : (
+                          'Generate Review →'
+                        )}
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        onClick={handleGenerateSelectedRowsReview}
+                        disabled={selectedRowIndices.length === 0 || loading['generate-selected-review']}
+                        size="small"
+                      >
+                        {loading['generate-selected-review'] ? (
+                          <>
+                            <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
+                            Reviewing...
+                          </>
+                        ) : (
+                          `Review Selected (${selectedRowIndices.length})`
+                        )}
+                      </Button>
+                    </Box>
                   </Box>
                   
                   <TableEditor
@@ -466,7 +546,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
                     columns={tableConfig.columns}
                     onChange={handleTableChange}
                     readOnly={false}
-                    selectedRowIndex={selectedRowIndex ?? undefined}
+                    selectedRowIndices={selectedRowIndices}
                     onRowSelect={handleRowSelect}
                     showRowSelection={true}
                   />
@@ -483,37 +563,35 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
                       <Button
                         variant="contained"
                         color="secondary"
-                        onClick={handleApplyRowReview}
-                        disabled={!section.data.draft.trim() || !section.data.reviewNotes.trim() || selectedRowIndex === null || loading['apply-review']}
+                        onClick={handleApplyTableReview}
+                        disabled={!section.data.draft.trim() || !section.data.reviewNotes.trim() || loading['apply-table-review']}
                         startIcon={<RefreshIcon />}
                         size="small"
                       >
-                        {loading['apply-review'] ? (
+                        {loading['apply-table-review'] ? (
                           <>
                             <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
                             Updating...
                           </>
-                        ) : selectedRowIndex !== null ? (
-                          `← Apply to Row #${selectedRowIndex + 1}`
                         ) : (
-                          '← Apply Review to Row'
+                          '← Apply & Update Table'
                         )}
                       </Button>
                       <Button
                         variant="contained"
                         color="primary"
-                        onClick={handleApplyReviewToAllRows}
-                        disabled={!section.data.draft.trim() || !section.data.reviewNotes.trim() || loading['apply-all-rows']}
+                        onClick={handleApplySelectedRowsReview}
+                        disabled={selectedRowIndices.length === 0 || !section.data.reviewNotes.trim() || loading['apply-selected-review']}
                         startIcon={<RefreshIcon />}
                         size="small"
                       >
-                        {loading['apply-all-rows'] ? (
+                        {loading['apply-selected-review'] ? (
                           <>
                             <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
-                            Updating All...
+                            Applying...
                           </>
                         ) : (
-                          '← Apply to All Rows'
+                          `← Apply to Selected (${selectedRowIndices.length})`
                         )}
                       </Button>
                     </Box>
@@ -562,7 +640,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
         onAccept={handleAcceptRowChanges}
         currentDraft={rowComparisonDialog.originalRow}
         proposedDraft={rowComparisonDialog.proposedRow}
-        sectionName={`${section.name} - Row #${(selectedRowIndex ?? 0) + 1}`}
+        sectionName={`${section.name} - ${selectedRowIndices.length === 1 ? `Row #${selectedRowIndices[0] + 1}` : `Selected Rows`}`}
         isTable={true}
         fieldOrder={getFieldOrder()}
         diffSegments={rowComparisonDialog.diffSegments}

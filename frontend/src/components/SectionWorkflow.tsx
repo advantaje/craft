@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -26,7 +26,9 @@ import { DocumentSection, SectionData, DiffSegment, DiffSummary } from '../types
 import { 
   generateDraftFromNotes, 
   generateReview, 
-  generateDraftFromReviewWithDiff 
+  generateDraftFromReviewWithDiff,
+  generateReviewForSelection,
+  applyReviewToSelectionWithDiff 
 } from '../services/api.service';
 import FormattedDocument from './FormattedDocument';
 import DraftComparisonDialog from './DraftComparisonDialog';
@@ -57,6 +59,11 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
     diffSummary: undefined as DiffSummary | undefined
   });
   const [guidelinesModalOpen, setGuidelinesModalOpen] = useState(false);
+  const [textSelection, setTextSelection] = useState<{
+    text: string;
+    start: number;
+    end: number;
+  } | null>(null);
 
   const steps = ['Notes', 'Draft & Review Cycle'];
 
@@ -172,6 +179,81 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
 
   const handleSaveGuidelines = (guidelines: SectionGuidelines) => {
     onGuidelinesUpdate(section.id, guidelines);
+  };
+
+  // Debounced text selection handler for real-time updates
+  const handleTextSelection = useCallback((event: React.SyntheticEvent) => {
+    const target = event.target as HTMLTextAreaElement;
+    const start = target.selectionStart;
+    const end = target.selectionEnd;
+    
+    // Handle selection immediately for better UX
+    if (start !== null && end !== null && start !== end) {
+      const selectedText = section.data.draft.substring(start, end);
+      setTextSelection({ text: selectedText, start, end });
+    } else {
+      setTextSelection(null);
+    }
+  }, [section.data.draft]);
+
+  // Immediate selection handler for real-time feedback
+  const handleSelectionChange = useCallback((event: React.SyntheticEvent) => {
+    handleTextSelection(event);
+  }, [handleTextSelection]);
+
+  const handleGenerateReviewForSelection = async () => {
+    if (!textSelection) return;
+    
+    setLoadingState('review-selection', true);
+    try {
+      const contextBefore = section.data.draft.substring(Math.max(0, textSelection.start - 100), textSelection.start);
+      const contextAfter = section.data.draft.substring(textSelection.end, Math.min(section.data.draft.length, textSelection.end + 100));
+      
+      const result = await generateReviewForSelection({
+        selectedText: textSelection.text,
+        contextBefore,
+        contextAfter,
+        sectionName: section.name,
+        sectionType: section.type,
+        guidelines: section.guidelines?.review,
+        fullDraft: section.data.draft
+      });
+      
+      onSectionUpdate(section.id, 'reviewNotes', result);
+    } catch (error) {
+      console.error('Error generating review for selection:', error);
+    } finally {
+      setLoadingState('review-selection', false);
+    }
+  };
+
+  const handleApplyReviewToSelection = async () => {
+    if (!textSelection || !section.data.reviewNotes.trim()) return;
+    
+    setLoadingState('apply-selection', true);
+    try {
+      const result = await applyReviewToSelectionWithDiff({
+        fullDraft: section.data.draft,
+        selectedText: textSelection.text,
+        selectionStart: textSelection.start,
+        selectionEnd: textSelection.end,
+        reviewNotes: section.data.reviewNotes,
+        sectionName: section.name,
+        sectionType: section.type,
+        guidelines: section.guidelines?.revision
+      });
+      
+      setComparisonDialog({
+        open: true,
+        proposedDraft: result.new_draft,
+        diffSegments: result.diff_segments,
+        diffSummary: result.diff_summary
+      });
+    } catch (error) {
+      console.error('Error applying review to selection:', error);
+    } finally {
+      setLoadingState('apply-selection', false);
+    }
   };
 
   return (
@@ -299,23 +381,51 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
               <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
                   <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                    <Typography variant="h6">Draft</Typography>
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      onClick={handleGenerateReview}
-                      disabled={!section.data.draft.trim() || loading['generate-review']}
-                      size="small"
-                    >
-                      {loading['generate-review'] ? (
-                        <>
-                          <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
-                          Analyzing...
-                        </>
-                      ) : (
-                        'Generate Review →'
+                    <Box display="flex" alignItems="center">
+                      <Typography variant="h6">Draft</Typography>
+                      {textSelection && (
+                        <Chip
+                          label={`${textSelection.text.length} characters selected`}
+                          size="small"
+                          variant="outlined"
+                          style={{ marginLeft: '8px' }}
+                        />
                       )}
-                    </Button>
+                    </Box>
+                    <Box display="flex" style={{ gap: '8px' }}>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        onClick={handleGenerateReview}
+                        disabled={!section.data.draft.trim() || loading['generate-review']}
+                        size="small"
+                      >
+                        {loading['generate-review'] ? (
+                          <>
+                            <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
+                            Analyzing...
+                          </>
+                        ) : (
+                          'Generate Review →'
+                        )}
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        onClick={handleGenerateReviewForSelection}
+                        disabled={!textSelection || loading['review-selection']}
+                        size="small"
+                      >
+                        {loading['review-selection'] ? (
+                          <>
+                            <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
+                            Reviewing...
+                          </>
+                        ) : (
+                          'Review Highlighted'
+                        )}
+                      </Button>
+                    </Box>
                   </Box>
                   <TextField
                     fullWidth
@@ -326,6 +436,9 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
                     onChange={(e) => onSectionUpdate(section.id, 'draft', e.target.value)}
                     onFocus={() => setFocusedField(`draft-${section.id}`)}
                     onBlur={() => setFocusedField(null)}
+                    onSelect={handleSelectionChange}
+                    onMouseUp={handleTextSelection}
+                    onKeyUp={handleTextSelection}
                     placeholder="Your draft content will appear here, or write it manually..."
                   />
                 </Grid>
@@ -333,23 +446,42 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
                 <Grid item xs={12} md={6}>
                   <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                     <Typography variant="h6">Review & Feedback</Typography>
-                    <Button
-                      variant="contained"
-                      color="secondary"
-                      onClick={handleGenerateDraftFromReview}
-                      disabled={!section.data.draft.trim() || !section.data.reviewNotes.trim() || loading['apply-review']}
-                      startIcon={<RefreshIcon />}
-                      size="small"
-                    >
-                      {loading['apply-review'] ? (
-                        <>
-                          <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
-                          Revising...
-                        </>
-                      ) : (
-                        '← Apply & Update Draft'
-                      )}
-                    </Button>
+                    <Box display="flex" style={{ gap: '8px' }}>
+                      <Button
+                        variant="contained"
+                        color="secondary"
+                        onClick={handleGenerateDraftFromReview}
+                        disabled={!section.data.draft.trim() || !section.data.reviewNotes.trim() || loading['apply-review']}
+                        startIcon={<RefreshIcon />}
+                        size="small"
+                      >
+                        {loading['apply-review'] ? (
+                          <>
+                            <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
+                            Revising...
+                          </>
+                        ) : (
+                          '← Apply & Update Draft'
+                        )}
+                      </Button>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleApplyReviewToSelection}
+                        disabled={!textSelection || !section.data.reviewNotes.trim() || loading['apply-selection']}
+                        startIcon={<RefreshIcon />}
+                        size="small"
+                      >
+                        {loading['apply-selection'] ? (
+                          <>
+                            <CircularProgress size={16} style={{ marginRight: '0.5rem' }} />
+                            Applying...
+                          </>
+                        ) : (
+                          '← Apply to Highlighted'
+                        )}
+                      </Button>
+                    </Box>
                   </Box>
                   <TextField
                     fullWidth

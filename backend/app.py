@@ -172,10 +172,11 @@ class GenerateRowFromReviewWithDiffHandler(BaseHandler):
             section_name = body.get('sectionName', 'Row')
             section_type = body.get('sectionType', None)
             guidelines = body.get('guidelines', None)
+            full_table_data = body.get('fullTableData', None)
             
             # Use row review service method
             result = self.generation_service.review_table_row_with_diff(
-                row_data, review_notes, columns, section_name, section_type, guidelines
+                row_data, review_notes, columns, section_name, section_type, guidelines, full_table_data
             )
             
             # Check for errors
@@ -345,6 +346,78 @@ class UploadTemplateHandler(BaseHandler):
             self.write(json.dumps({"error": str(e)}))
 
 
+class GenerateReviewForSelectionHandler(BaseHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.generation_service = GenerationService()
+
+    def post(self):
+        try:
+            body = json.loads(self.request.body)
+            selected_text = body.get('selectedText', '')
+            context_before = body.get('contextBefore', '')
+            context_after = body.get('contextAfter', '')
+            section_name = body.get('sectionName', 'Selection')
+            section_type = body.get('sectionType', 'default')
+            guidelines = body.get('guidelines', None)
+            full_draft = body.get('fullDraft', None)
+            
+            # Use selection review service method
+            result = self.generation_service.review_text_selection(
+                selected_text, context_before, context_after, section_name, section_type, guidelines, full_draft
+            )
+            
+            # Check for errors
+            if result.startswith("Error"):
+                self.set_status(500)
+                self.write(json.dumps({"error": result}))
+                return
+            
+            response = {"result": result}
+            self.set_header("Content-Type", "application/json")
+            self.write(json.dumps(response))
+        except Exception as e:
+            self.set_status(500)
+            self.write(json.dumps({"error": str(e)}))
+
+
+class ApplyReviewToSelectionWithDiffHandler(BaseHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.generation_service = GenerationService()
+
+    def post(self):
+        try:
+            body = json.loads(self.request.body)
+            full_draft = body.get('fullDraft', '')
+            selected_text = body.get('selectedText', '')
+            selection_start = body.get('selectionStart', 0)
+            selection_end = body.get('selectionEnd', 0)
+            review_notes = body.get('reviewNotes', '')
+            section_name = body.get('sectionName', 'Selection')
+            section_type = body.get('sectionType', 'default')
+            guidelines = body.get('guidelines', None)
+            
+            # Use selection application service method
+            result = self.generation_service.apply_review_to_selection_with_diff(
+                full_draft, selected_text, selection_start, selection_end, 
+                review_notes, section_name, section_type, guidelines
+            )
+            
+            # Check for errors
+            if "error" in result:
+                self.set_status(500)
+                self.write(json.dumps({"error": result["error"]}))
+                return
+            
+            response = {"result": result}
+            self.set_header("Content-Type", "application/json")
+            self.write(json.dumps(response))
+        except Exception as e:
+            self.set_status(500)
+            self.write(json.dumps({"error": str(e)}))
+
+
 def make_app():
     return tornado.web.Application([
         (r"/api/hello", HelloHandler),
@@ -354,6 +427,8 @@ def make_app():
         (r"/api/generate-row-from-review-with-diff", GenerateRowFromReviewWithDiffHandler),
         (r"/api/generate-table-from-review-with-diff", GenerateTableFromReviewWithDiffHandler),
         (r"/api/generate-review", GenerateReviewHandler),
+        (r"/api/generate-review-for-selection", GenerateReviewForSelectionHandler),
+        (r"/api/apply-review-to-selection-with-diff", ApplyReviewToSelectionWithDiffHandler),
         (r"/api/generate-document", GenerateDocumentHandler),
         (r"/api/upload-template", UploadTemplateHandler),
     ])

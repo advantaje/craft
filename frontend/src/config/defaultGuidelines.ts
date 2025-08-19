@@ -88,16 +88,7 @@ export const DEFAULT_GUIDELINES: Record<string, SectionGuidelines> = {
 - Cover data, technical, and scope limitations appropriately
 - Provide clear descriptions of each limitation's impact
 - Help stakeholders understand model boundaries
-
-Table columns:
-- title (text): Brief title of the limitation
-- description (text): Detailed description of the limitation and its implications
-- category (select): Must be one of exactly: "Data Limitations", "Technical Limitations", or "Scope Limitations"
-
-IMPORTANT: Return ONLY valid JSON in this exact format:
-{"rows": [
-  {"title": "Limited Training Data", "description": "The model was trained on a dataset that may not fully represent all possible scenarios, potentially affecting performance on edge cases", "category": "Data Limitations"}
-]}`,
+- Focus on limitations that directly affect model reliability and business decisions`,
     
     review: `Analyze the limitations data and provide feedback on:
 - Completeness: Are all critical model limitations covered?
@@ -107,15 +98,11 @@ IMPORTANT: Return ONLY valid JSON in this exact format:
 - Clarity: Are titles concise and descriptions informative for stakeholders?
 - Balance: Is there a good distribution across different limitation types?`,
     
-    revision: `Update the Model Limitations table data based on review feedback. The table must maintain these exact columns:
-- title (text): Brief title of the limitation
-- description (text): Detailed description of the limitation and its implications
-- category (select): Must be "Data Limitations", "Technical Limitations", or "Scope Limitations"
-
-IMPORTANT: Return ONLY valid JSON in the exact format:
-{"rows": [
-  {"title": "...", "description": "...", "category": "Data Limitations"}
-]}`
+    revision: `Update the Model Limitations table data based on review feedback while maintaining focus on:
+- Critical limitations that affect model reliability
+- Clear, stakeholder-friendly descriptions
+- Proper categorization across limitation types
+- Actionable insights for model users`
   },
 
   model_risk_issues: {
@@ -123,19 +110,9 @@ IMPORTANT: Return ONLY valid JSON in the exact format:
 - Identify 3-7 critical risk issues for stakeholder awareness
 - Cover operational, market, and credit risks as appropriate
 - Assess importance levels based on potential business impact
-- Provide comprehensive descriptions of each risk
-- Help with risk mitigation planning
-
-Table columns:
-- title (text): Brief title of the risk issue
-- description (text): Detailed description of the risk issue (can be longer and more comprehensive)
-- category (select): Must be one of exactly: "Operational Risk", "Market Risk", or "Credit Risk"
-- importance (select): Must be one of exactly: "Critical", "High", or "Low"
-
-IMPORTANT: Return ONLY valid JSON in this exact format:
-{"rows": [
-  {"title": "Model Drift", "description": "Model performance may degrade over time as market conditions and data patterns evolve, potentially leading to inaccurate predictions and business decisions", "category": "Operational Risk", "importance": "Critical"}
-]}`,
+- Provide comprehensive descriptions of each risk and its potential consequences
+- Help with risk mitigation planning and decision-making
+- Focus on risks that could significantly impact business outcomes`,
     
     review: `Analyze the risk issues data and provide feedback on:
 - Risk coverage: Are all critical model risk issues covered?
@@ -145,16 +122,12 @@ IMPORTANT: Return ONLY valid JSON in this exact format:
 - Missing risks: Are there any obvious risk issues that should be included?
 - Balance: Is there a good balance of risk types and importance levels?`,
     
-    revision: `Update the Model Risk Issues table data based on review feedback. The table must maintain these exact columns:
-- title (text): Brief title of the risk issue
-- description (text): Detailed description of the risk issue (can be longer and more comprehensive)
-- category (select): Must be "Operational Risk", "Market Risk", or "Credit Risk"
-- importance (select): Must be "Critical", "High", or "Low"
-
-IMPORTANT: Return ONLY valid JSON in the exact format:
-{"rows": [
-  {"title": "...", "description": "...", "category": "Operational Risk", "importance": "Critical"}
-]}`
+    revision: `Update the Model Risk Issues table data based on review feedback while ensuring:
+- Comprehensive coverage of critical model risks
+- Appropriate importance level assignments
+- Clear descriptions of potential business impact
+- Proper risk categorization and balance
+- Actionable insights for risk management`
   },
 
   default: {

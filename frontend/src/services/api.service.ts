@@ -11,6 +11,9 @@ import {
   GenerateDraftFromReviewWithDiffResponse,
   GenerateRowReviewRequest,
   GenerateRowReviewResponse,
+  GenerateSelectionReviewRequest,
+  ApplySelectionReviewRequest,
+  ApplySelectionReviewResponse,
 } from '../types/document.types';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8888';
@@ -61,6 +64,16 @@ export async function generateRowFromReviewWithDiff(request: GenerateRowReviewRe
 
 export async function generateTableFromReviewWithDiff(request: GenerateDraftFromReviewRequest): Promise<GenerateDraftFromReviewWithDiffResponse> {
   const response = await axiosInstance.post<ApiResponse<GenerateDraftFromReviewWithDiffResponse>>('/api/generate-table-from-review-with-diff', request);
+  return response.data.result;
+}
+
+export async function generateReviewForSelection(request: GenerateSelectionReviewRequest): Promise<string> {
+  const response = await axiosInstance.post<ApiResponse<string>>('/api/generate-review-for-selection', request);
+  return response.data.result;
+}
+
+export async function applyReviewToSelectionWithDiff(request: ApplySelectionReviewRequest): Promise<ApplySelectionReviewResponse> {
+  const response = await axiosInstance.post<ApiResponse<ApplySelectionReviewResponse>>('/api/apply-review-to-selection-with-diff', request);
   return response.data.result;
 }
 

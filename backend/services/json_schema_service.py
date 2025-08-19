@@ -8,18 +8,20 @@ class JsonSchemaService:
     # Static table configurations mapping (mirrors frontend configurations)
     TABLE_CONFIGS = {
         'model_limitations': {
+            'description': 'Model limitations table with title, description, and categorization',
             'columns': [
-                {'id': 'title', 'type': 'text', 'required': True},
-                {'id': 'description', 'type': 'text'},
-                {'id': 'category', 'type': 'select', 'options': ['Data Limitations', 'Technical Limitations', 'Scope Limitations']}
+                {'id': 'title', 'type': 'text', 'required': True, 'description': 'Brief, clear title of the limitation'},
+                {'id': 'description', 'type': 'text', 'description': 'Detailed explanation of the limitation and its implications'},
+                {'id': 'category', 'type': 'select', 'options': ['Data Limitations', 'Technical Limitations', 'Scope Limitations'], 'description': 'Classification category for the limitation type'}
             ]
         },
         'model_risk_issues': {
+            'description': 'Model risk issues table with title, description, category, and importance level',
             'columns': [
-                {'id': 'title', 'type': 'text', 'required': True},
-                {'id': 'description', 'type': 'text'},
-                {'id': 'category', 'type': 'select', 'options': ['Operational Risk', 'Market Risk', 'Credit Risk']},
-                {'id': 'importance', 'type': 'select', 'options': ['Critical', 'High', 'Low']}
+                {'id': 'title', 'type': 'text', 'required': True, 'description': 'Concise title identifying the specific risk issue'},
+                {'id': 'description', 'type': 'text', 'description': 'Comprehensive description of the risk, its potential impact, and mitigation considerations'},
+                {'id': 'category', 'type': 'select', 'options': ['Operational Risk', 'Market Risk', 'Credit Risk'], 'description': 'Primary risk category classification'},
+                {'id': 'importance', 'type': 'select', 'options': ['Critical', 'High', 'Low'], 'description': 'Priority level indicating the severity and urgency of addressing this risk'}
             ]
         }
     }
@@ -40,19 +42,30 @@ class JsonSchemaService:
         for column in config['columns']:
             col_id = column['id']
             col_type = column['type']
+            col_description = column.get('description', f'{col_id} field')
             
             if col_type == 'text':
-                row_properties[col_id] = {"type": "string"}
+                row_properties[col_id] = {
+                    "type": "string",
+                    "description": col_description
+                }
             elif col_type == 'number':
-                row_properties[col_id] = {"type": "number"}
+                row_properties[col_id] = {
+                    "type": "number",
+                    "description": col_description
+                }
             elif col_type == 'select':
                 row_properties[col_id] = {
                     "type": "string",
-                    "enum": column['options']
+                    "enum": column['options'],
+                    "description": f"{col_description}. Valid options: {', '.join(column['options'])}"
                 }
             else:
                 # Default to string for unknown types
-                row_properties[col_id] = {"type": "string"}
+                row_properties[col_id] = {
+                    "type": "string",
+                    "description": col_description
+                }
             
             # For strict mode, all fields must be required
             required_fields.append(col_id)
@@ -60,11 +73,14 @@ class JsonSchemaService:
         # Build complete table schema
         schema = {
             "type": "object",
+            "description": config.get('description', f'Table data for {section_type}'),
             "properties": {
                 "rows": {
                     "type": "array",
+                    "description": f"Array of rows containing {section_type} data. Each row represents one entry with all required fields filled.",
                     "items": {
                         "type": "object",
+                        "description": f"Single row entry for {section_type} with all required fields",
                         "properties": row_properties,
                         "required": required_fields,
                         "additionalProperties": False

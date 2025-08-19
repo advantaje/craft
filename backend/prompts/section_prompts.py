@@ -43,17 +43,8 @@ Generate the revised content:
 """
     }
     
-    # Table-specific JSON format instructions
-    TABLE_FORMATS = {
-        "model_limitations": {
-            "columns": "title (text), description (text), category (select: Data Limitations/Technical Limitations/Scope Limitations)",
-            "example": '{"rows": [{"title": "Limited Training Data", "description": "Description here", "category": "Data Limitations"}]}'
-        },
-        "model_risk_issues": {
-            "columns": "title (text), description (text), category (select: Operational Risk/Market Risk/Credit Risk), importance (select: Critical/High/Low)", 
-            "example": '{"rows": [{"title": "Model Drift", "description": "Description here", "category": "Operational Risk", "importance": "Critical"}]}'
-        }
-    }
+    # Table section types that use structured output schemas
+    TABLE_SECTIONS = {'model_limitations', 'model_risk_issues'}
     
     @classmethod
     def get_prompt(cls, operation: str, section_type: str, section_name: str, guidelines: str = None, **kwargs) -> str:
@@ -64,15 +55,10 @@ Generate the revised content:
         # Format with provided parameters
         base_prompt = template.format(section_name=section_name, **kwargs)
         
-        # Add table formatting for JSON sections
-        if section_type in cls.TABLE_FORMATS and operation in ['draft', 'revision']:
-            table_info = cls.TABLE_FORMATS[section_type]
-            base_prompt += f"\n\nTable Format:\nColumns: {table_info['columns']}\nReturn ONLY valid JSON: {table_info['example']}"
-        
         # Add guidelines if provided
         if guidelines and guidelines.strip():
             # For table sections in outline mode, provide cleaner guidance
-            if operation == 'outline' and section_type in cls.TABLE_FORMATS:
+            if operation == 'outline' and section_type in cls.TABLE_SECTIONS:
                 # Extract the conceptual part of guidelines before JSON formatting
                 guidelines_lines = guidelines.strip().split('\n')
                 conceptual_guidelines = []

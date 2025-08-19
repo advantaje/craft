@@ -184,7 +184,7 @@ class GenerationService:
             print(f"Error applying review notes with diff: {e}")
             return {"error": f"Error applying review notes: {str(e)}. Please check your API configuration."}
     
-    def review_table_row_with_diff(self, row_data: dict, review_notes: str, columns: list, section_name: str, section_type: str = None, guidelines: str = None) -> dict:
+    def review_table_row_with_diff(self, row_data: dict, review_notes: str, columns: list, section_name: str, section_type: str = None, guidelines: str = None, full_table_data: dict = None) -> dict:
         """Review a single table row and return updated row with diff data"""
         if not row_data:
             return {"error": "Please provide row data to review."}
@@ -192,20 +192,26 @@ class GenerationService:
             return {"error": "Please provide review notes to apply."}
         
         try:
-            # Format row as a single-row table for consistency with table JSON format
-            table_json = json.dumps({"rows": [row_data]}, indent=2)
+            # Format both full table and specific row for LLM context
+            full_context = ""
+            if full_table_data and full_table_data.get('rows'):
+                full_context = f"""
+Full table for context:
+{json.dumps(full_table_data, indent=2)}
+
+"""
+            
+            row_json = json.dumps({"rows": [row_data]}, indent=2)
             
             # Create a focused prompt for row review using JSON format
             prompt = f"""
-Review and improve this table data based on the feedback provided.
-
-Current table data (single row):
-{table_json}
+{full_context}Specific row to review and improve (Row #{len([r for r in (full_table_data.get('rows', []) if full_table_data else [])]) if full_table_data else 1}):
+{row_json}
 
 Feedback to apply:
 {review_notes}
 
-IMPORTANT: Return the improved table data in the EXACT same JSON format with the updated row. The table should still contain exactly one row with the improvements applied based on the feedback."""
+IMPORTANT: Return the improved table data in the EXACT same JSON format with the updated row. The table should still contain exactly one row with the improvements applied based on the feedback. Maintain consistency with the full table context shown above."""
             
             # Add guidelines if provided
             if guidelines and guidelines.strip():
@@ -426,3 +432,106 @@ IMPORTANT: Return the improved table data in the EXACT same JSON format with all
         
         diff_summary = self.diff_service.compute_diff_summary(diff_segments)
         return diff_segments, diff_summary, formatted_original, formatted_new
+    
+    def review_text_selection(self, selected_text: str, context_before: str, context_after: str, section_name: str, section_type: str = None, guidelines: str = None, full_draft: str = None) -> str:
+        """Generate review for a selected text fragment with context"""
+        if not selected_text.strip():
+            return "Error: Please provide text to review."
+            
+        try:
+            # Format both full draft and specific selection for LLM context
+            full_context = ""
+            if full_draft and full_draft.strip():
+                full_context = f"""
+Full document for context:
+{full_draft}
+
+"""
+            
+            # Create a focused prompt for text selection review
+            prompt = f"""
+{full_context}Specific selection to review:
+>>> SELECTION START <<<
+{selected_text}
+>>> SELECTION END <<<
+
+Context before the selection:
+...{context_before}
+
+Context after the selection:
+{context_after}...
+
+Please provide specific, actionable feedback for improving ONLY the selected text shown between the markers above. Focus on:
+- Clarity and readability
+- Accuracy and completeness
+- Style and tone consistency with the full document
+- Any factual or logical issues
+
+Provide your feedback in a clear, structured format."""
+            
+            # Add guidelines if provided
+            if guidelines and guidelines.strip():
+                prompt += f"\n\nGuidelines for reviewing:\n{guidelines.strip()}"
+            
+            # Generate review using unified error handling
+            review = self._generate_content('review', section_type or 'default', section_name, None, prompt_override=prompt)
+            
+            return review
+            
+        except Exception as e:
+            print(f"Error reviewing text selection: {e}")
+            return f"Error reviewing text selection: {str(e)}. Please check your API configuration."
+    
+    def apply_review_to_selection_with_diff(self, full_draft: str, selected_text: str, selection_start: int, selection_end: int, review_notes: str, section_name: str, section_type: str = None, guidelines: str = None) -> dict:
+        """Apply review to a text selection and return updated draft with diff data"""
+        if not full_draft.strip():
+            return {"error": "Please provide a draft to work with."}
+        if not selected_text.strip():
+            return {"error": "Please provide selected text to improve."}
+        if not review_notes.strip():
+            return {"error": "Please provide review notes to apply."}
+        
+        try:
+            # Create a focused prompt for improving the selection
+            prompt = f"""
+Full document for context:
+{full_draft}
+
+Specific selection to improve:
+>>> SELECTION START <<<
+{selected_text}
+>>> SELECTION END <<<
+
+FEEDBACK TO APPLY:
+{review_notes}
+
+Please return ONLY the improved version of the selected text shown between the markers above. Consider the full document context to ensure consistency, but return only the improved selection that can directly replace the original. Do not include any explanations, context, or additional text."""
+            
+            # Add guidelines if provided
+            if guidelines and guidelines.strip():
+                prompt += f"\n\nGuidelines for improvement:\n{guidelines.strip()}"
+            
+            # Generate improved selection using unified error handling
+            improved_selection = self._generate_content('revision', section_type or 'default', section_name, None, prompt_override=prompt)
+            
+            if improved_selection.startswith("Error"):
+                return {"error": improved_selection}
+            
+            # Replace the selection in the full draft
+            new_draft = full_draft[:selection_start] + improved_selection + full_draft[selection_end:]
+            
+            # Compute diff between original and new draft
+            diff_segments = self.diff_service.compute_document_diff(full_draft, new_draft)
+            diff_summary = self.diff_service.compute_diff_summary(diff_segments)
+            
+            return {
+                "new_draft": new_draft,
+                "original_selection": selected_text,
+                "new_selection": improved_selection,
+                "diff_segments": diff_segments,
+                "diff_summary": diff_summary
+            }
+            
+        except Exception as e:
+            print(f"Error applying review to selection: {e}")
+            return {"error": f"Error applying review to selection: {str(e)}. Please check your API configuration."}
