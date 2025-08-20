@@ -175,8 +175,8 @@ const TableEditor: React.FC<TableEditorProps> = ({
                         size="small"
                         variant="outlined"
                         required={col.required}
-                        multiline={col.id === 'description'}
-                        rows={col.id === 'description' ? 3 : 1}
+                        multiline={col.id === 'description' || col.id === 'title'}
+                        rows={col.id === 'description' || col.id === 'title' ? 7 : 1}
                         InputLabelProps={col.type === 'date' ? { shrink: true } : undefined}
                       />
                     )}
