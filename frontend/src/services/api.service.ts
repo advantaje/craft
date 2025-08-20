@@ -96,10 +96,15 @@ export async function generateDocument(request: GenerateDocumentRequest): Promis
     const contentDisposition = response.headers['content-disposition'];
     let filename = `${request.documentId}.docx`; // fallback
     
+    // Debug logging
+    console.log('Response headers:', response.headers);
+    console.log('Content-Disposition header:', contentDisposition);
+    
     if (contentDisposition) {
       const filenameMatch = contentDisposition.match(/filename=([^;]+)/);
       if (filenameMatch) {
         filename = filenameMatch[1].replace(/"/g, ''); // remove quotes if present
+        console.log('Extracted filename:', filename);
       }
     }
 
