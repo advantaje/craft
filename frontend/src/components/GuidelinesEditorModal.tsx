@@ -143,7 +143,7 @@ const GuidelinesEditorModal: React.FC<GuidelinesEditorModalProps> = ({
                 <TextField
                   fullWidth
                   multiline
-                  rows={12}
+                  rows={24}
                   variant="outlined"
                   value={editedGuidelines[operation]}
                   onChange={(e) => updateGuideline(operation, e.target.value)}

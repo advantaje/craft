@@ -386,7 +386,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
               <TextField
                 fullWidth
                 multiline
-                rows={6}
+                rows={24}
                 variant="outlined"
                 value={section.data.notes}
                 onChange={(e) => onSectionUpdate(section.id, 'notes', e.target.value)}
@@ -455,7 +455,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
                   <TextField
                     fullWidth
                     multiline
-                    rows={12}
+                    rows={24}
                     variant="outlined"
                     value={section.data.draft}
                     onChange={(e) => onSectionUpdate(section.id, 'draft', e.target.value)}
@@ -512,7 +512,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
                   <TextField
                     fullWidth
                     multiline
-                    rows={12}
+                    rows={24}
                     variant="outlined"
                     value={section.data.reviewNotes}
                     onChange={(e) => onSectionUpdate(section.id, 'reviewNotes', e.target.value)}

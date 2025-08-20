@@ -515,7 +515,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
               <TextField
                 fullWidth
                 multiline
-                rows={6}
+                rows={24}
                 variant="outlined"
                 value={section.data.notes}
                 onChange={(e) => onSectionUpdate(section.id, 'notes', e.target.value)}
@@ -630,7 +630,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
                   <TextField
                     fullWidth
                     multiline
-                    rows={6}
+                    rows={24}
                     variant="outlined"
                     value={section.data.reviewNotes}
                     onChange={(e) => onSectionUpdate(section.id, 'reviewNotes', e.target.value)}
