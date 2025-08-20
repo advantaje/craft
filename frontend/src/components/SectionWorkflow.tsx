@@ -417,7 +417,9 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
                           label={`${textSelection.text.length} characters selected`}
                           size="small"
                           variant="outlined"
-                          style={{ marginLeft: '8px' }}
+                          clickable={true}
+                          onClick={() => onSelectionClear(section.id)}
+                          style={{ marginLeft: '8px', cursor: 'pointer' }}
                         />
                       )}
                     </Box>
