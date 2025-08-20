@@ -347,12 +347,28 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
     const tableData = parseTableData(section.data.draft);
     const updatedRows = [...tableData.rows];
     
-    // Parse the new row data from the dialog
+    // Parse the new row data from the dialog - now handles multiple rows
     try {
-      const newRowData = JSON.parse(rowComparisonDialog.proposedRow);
-      // For single row changes, update the first selected row
+      const parsedData = JSON.parse(rowComparisonDialog.proposedRow);
+      
+      // Determine if we have single or multiple rows
+      let newRows: any[];
+      if (Array.isArray(parsedData)) {
+        // Direct array of rows
+        newRows = parsedData;
+      } else if (parsedData.rows && Array.isArray(parsedData.rows)) {
+        // Table format with rows array
+        newRows = parsedData.rows;
+      } else {
+        // Single row object
+        newRows = [parsedData];
+      }
+      
+      // Replace the original selected row with all new rows
       if (selectedRowIndices.length > 0 && selectedRowIndices[0] < updatedRows.length) {
-        updatedRows[selectedRowIndices[0]] = newRowData;
+        const insertIndex = selectedRowIndices[0];
+        // Remove 1 row at insertIndex and insert all new rows
+        updatedRows.splice(insertIndex, 1, ...newRows);
         const updatedTableData = { rows: updatedRows };
         onSectionUpdate(section.id, 'draft', JSON.stringify(updatedTableData));
       }

@@ -212,7 +212,7 @@ Full table for context:
 Feedback to apply:
 {review_notes}
 
-IMPORTANT: Return the improved table data in the EXACT same JSON format with the updated row. The table should still contain exactly one row with the improvements applied based on the feedback. Maintain consistency with the full table context shown above."""
+IMPORTANT: Return the improved table data in the EXACT same JSON format. You may return one or more rows based on the feedback - if the feedback suggests splitting, expanding, or adding related entries, feel free to return multiple rows. If it's just improvements to the existing row, return one row. Maintain consistency with the full table context shown above."""
             
             # Add guidelines if provided
             if guidelines and guidelines.strip():
@@ -240,23 +240,24 @@ IMPORTANT: Return the improved table data in the EXACT same JSON format with the
             if improved_json_text.startswith("Error"):
                 return {"error": improved_json_text}
             
-            # Parse JSON response and extract the first (and only) row
+            # Parse JSON response and extract all rows
             # Structured outputs guarantee valid JSON, so no need for fallbacks
             improved_table = json.loads(improved_json_text)
-            improved_row = improved_table['rows'][0]
+            improved_rows = improved_table['rows']
             
-            # Compute diff between original and improved row using formatted JSON
+            # Compute diff between original single row and new rows using formatted JSON
+            # Always format both as table structure for consistent diff display
             field_order = self.FIELD_ORDER_MAPPING.get(section_type, None) if section_type else None
-            original_json = self._format_json_with_order(row_data, field_order, is_table=False)
-            improved_json = self._format_json_with_order(improved_row, field_order, is_table=False)
+            original_json = self._format_json_with_order({"rows": [row_data]}, field_order, is_table=True)
+            new_formatted = self._format_json_with_order({"rows": improved_rows}, field_order, is_table=True)
             
-            diff_segments = self.diff_service.compute_document_diff(original_json, improved_json)
+            diff_segments = self.diff_service.compute_document_diff(original_json, new_formatted)
             diff_summary = self.diff_service.compute_diff_summary(diff_segments)
             
             return {
-                "new_row": improved_row,
+                "new_rows": improved_rows,  # Return all rows as array
                 "original_formatted": original_json,
-                "new_formatted": improved_json,
+                "new_formatted": new_formatted,
                 "diff_segments": diff_segments,
                 "diff_summary": diff_summary
             }

@@ -139,7 +139,7 @@ export interface GenerateRowReviewRequest {
 }
 
 export interface GenerateRowReviewResponse {
-  new_row: { [key: string]: string | number };
+  new_rows: Array<{ [key: string]: string | number }>; // Now an array of rows
   original_formatted: string;
   new_formatted: string;
   diff_segments: DiffSegment[];
