@@ -74,7 +74,7 @@ class GenerationService:
             # Make API call with direct parameters
             if response_format:
                 response = self.client.chat.completions.create(
-                    deployment_id=self.model,
+                    model=self.model,
                     messages=[
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": prompt}
@@ -84,7 +84,7 @@ class GenerationService:
                 )
             else:
                 response = self.client.chat.completions.create(
-                    deployment_id=self.model,
+                    model=self.model,
                     messages=[
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": prompt}
@@ -237,7 +237,7 @@ IMPORTANT: Return the improved table data in the EXACT same JSON format. You may
             temperature = 1.0 if self.model == 'o4-mini-2025-04-16' else 0.0
             
             response = self.client.chat.completions.create(
-                deployment_id=self.model,
+                model=self.model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt}
@@ -320,7 +320,7 @@ IMPORTANT: Return the improved table data in the EXACT same JSON format with all
             temperature = 1.0 if self.model == 'o4-mini-2025-04-16' else 0.0
             
             response = self.client.chat.completions.create(
-                deployment_id=self.model,
+                model=self.model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt}
@@ -454,9 +454,18 @@ IMPORTANT: Return the improved table data in the EXACT same JSON format with all
             return "Error: Please provide text to review."
             
         try:
-            # Create a focused prompt for text selection review (without full document context)
-            prompt = f"""
-Text selection to review:
+            # Create prompt with full document context for better understanding
+            prompt = ""
+            
+            if full_draft and full_draft.strip():
+                prompt = f"""
+Full document for context:
+{full_draft}
+
+"""
+            
+            prompt += f"""Text selection to review:
+
 >>> SELECTION START <<<
 {selected_text}
 >>> SELECTION END <<<
@@ -492,10 +501,14 @@ Provide your feedback in a clear, structured format."""
             return {"error": "Please provide review notes to apply."}
         
         try:
-            # Create a focused prompt for improving the selection
+            # Create a focused prompt for improving the selection with full document context
             selected_char_count = len(selected_text)
             prompt = f"""
+Full document for context:
+{full_draft}
+
 TEXT SELECTION TO IMPROVE (Original: {selected_char_count} characters):
+
 >>> SELECTION START <<<
 {selected_text}
 >>> SELECTION END <<<
