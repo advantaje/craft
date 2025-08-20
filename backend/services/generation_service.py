@@ -49,34 +49,36 @@ class GenerationService:
             if requires_json:
                 system_prompt = self.SYSTEM_PROMPTS['json']
                 response_format = JsonSchemaService.get_structured_output_format(section_type)
-                max_tokens = 2500
             elif operation == 'review':
                 system_prompt = self.SYSTEM_PROMPTS['review']
                 response_format = None
-                max_tokens = 1500
             elif operation == 'revision':
                 system_prompt = self.SYSTEM_PROMPTS['revision']
                 response_format = None
-                max_tokens = 2500
             else:
                 system_prompt = self.SYSTEM_PROMPTS['text']
                 response_format = None
-                max_tokens = 2000 if operation == 'draft' else 1000
             
-            # For row review with override prompt, use simpler system prompt
+            # For override prompts, determine the type of operation
             if prompt_override:
-                system_prompt = "You are an expert at improving table data based on feedback. Return data in the same format as provided."
-                max_tokens = 1000
+                # Check if this is a text selection operation
+                if "SELECTION START" in prompt_override and "SELECTION END" in prompt_override:
+                    system_prompt = "You are a precise text editor. You must return ONLY the improved version of the selected text, without adding ANY text before or after it. The returned text must be a direct replacement for the selection - no more, no less."
+                else:
+                    # Table data or other operations
+                    system_prompt = "You are an expert at improving table data based on feedback. Return data in the same format as provided."
+            
+            # Set temperature based on model
+            temperature = 1.0 if self.model == 'o4-mini-2025-04-16' else 0.0
             
             # Make API call
             call_kwargs = {
-                'model': self.model,
+                'deployment_id': self.model,
                 'messages': [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt}
                 ],
-                'temperature': 0.6 if operation == 'review' else 0.7,
-                'max_tokens': max_tokens
+                'temperature': temperature
             }
             
             if response_format:
@@ -435,33 +437,18 @@ IMPORTANT: Return the improved table data in the EXACT same JSON format with all
         diff_summary = self.diff_service.compute_diff_summary(diff_segments)
         return diff_segments, diff_summary, formatted_original, formatted_new
     
-    def review_text_selection(self, selected_text: str, context_before: str, context_after: str, section_name: str, section_type: str = None, guidelines: str = None, full_draft: str = None) -> str:
-        """Generate review for a selected text fragment with context"""
+    def review_text_selection(self, selected_text: str, section_name: str, section_type: str = None, guidelines: str = None, full_draft: str = None) -> str:
+        """Generate review for a selected text fragment"""
         if not selected_text.strip():
             return "Error: Please provide text to review."
             
         try:
-            # Format both full draft and specific selection for LLM context
-            full_context = ""
-            if full_draft and full_draft.strip():
-                full_context = f"""
-Full document for context:
-{full_draft}
-
-"""
-            
-            # Create a focused prompt for text selection review
+            # Create a focused prompt for text selection review (without full document context)
             prompt = f"""
-{full_context}Specific selection to review:
+Text selection to review:
 >>> SELECTION START <<<
 {selected_text}
 >>> SELECTION END <<<
-
-Context before the selection:
-...{context_before}
-
-Context after the selection:
-{context_after}...
 
 Please provide specific, actionable feedback for improving ONLY the selected text shown between the markers above. Focus on:
 - Clarity and readability
@@ -495,11 +482,9 @@ Provide your feedback in a clear, structured format."""
         
         try:
             # Create a focused prompt for improving the selection
+            selected_char_count = len(selected_text)
             prompt = f"""
-Full document for context:
-{full_draft}
-
-Specific selection to improve:
+TEXT SELECTION TO IMPROVE (Original: {selected_char_count} characters):
 >>> SELECTION START <<<
 {selected_text}
 >>> SELECTION END <<<
@@ -507,7 +492,13 @@ Specific selection to improve:
 FEEDBACK TO APPLY:
 {review_notes}
 
-Please return ONLY the improved version of the selected text shown between the markers above. Consider the full document context to ensure consistency, but return only the improved selection that can directly replace the original. Do not include any explanations, context, or additional text."""
+CRITICAL INSTRUCTIONS:
+- Return EXACTLY the replacement text for the selection between the markers
+- Your response must be a direct replacement for ONLY the selected text
+- Do NOT add any text that was not originally selected
+- Do NOT include text before or after the selection boundaries
+- Do NOT include explanations, context, or additional sentences
+- Focus solely on improving the selected text within its boundaries"""
             
             # Add guidelines if provided
             if guidelines and guidelines.strip():

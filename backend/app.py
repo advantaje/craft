@@ -416,8 +416,6 @@ class GenerateReviewForSelectionHandler(BaseHandler):
         try:
             body = json.loads(self.request.body)
             selected_text = body.get('selectedText', '')
-            context_before = body.get('contextBefore', '')
-            context_after = body.get('contextAfter', '')
             section_name = body.get('sectionName', 'Selection')
             section_type = body.get('sectionType', 'default')
             guidelines = body.get('guidelines', None)
@@ -435,9 +433,9 @@ class GenerateReviewForSelectionHandler(BaseHandler):
             elif draft_guidelines and not guidelines:
                 combined_guidelines = f"Review this selection based on the original requirements:\n{draft_guidelines}"
             
-            # Use selection review service method
+            # Use selection review service method (without context parameters)
             result = generation_service.review_text_selection(
-                selected_text, context_before, context_after, section_name, section_type, combined_guidelines, full_draft
+                selected_text, section_name, section_type, combined_guidelines, full_draft
             )
             
             # Check for errors

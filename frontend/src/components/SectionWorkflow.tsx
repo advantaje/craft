@@ -231,13 +231,8 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
     
     setLoadingState('review-selection', true);
     try {
-      const contextBefore = section.data.draft.substring(Math.max(0, textSelection.start - 100), textSelection.start);
-      const contextAfter = section.data.draft.substring(textSelection.end, Math.min(section.data.draft.length, textSelection.end + 100));
-      
       const result = await generateReviewForSelection({
         selectedText: textSelection.text,
-        contextBefore,
-        contextAfter,
         sectionName: section.name,
         sectionType: section.type,
         guidelines: section.guidelines?.review,

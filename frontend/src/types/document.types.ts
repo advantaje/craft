@@ -153,8 +153,6 @@ export interface GenerateRowReviewResponse {
 // Text selection types
 export interface GenerateSelectionReviewRequest {
   selectedText: string;
-  contextBefore: string;
-  contextAfter: string;
   sectionName: string;
   sectionType?: string;
   guidelines?: string;
