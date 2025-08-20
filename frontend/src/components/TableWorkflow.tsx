@@ -161,6 +161,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
         sectionName: section.name,
         sectionType: tableConfig.sectionType,
         guidelines: section.guidelines?.review,
+        draftGuidelines: section.guidelines?.draft,
         modelId: selectedModel
       });
       onSectionUpdate(section.id, 'reviewNotes', result);
@@ -188,6 +189,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
         sectionName: `${section.name} - Selected Rows`,
         sectionType: tableConfig.sectionType,
         guidelines: section.guidelines?.review,
+        draftGuidelines: section.guidelines?.draft,
         modelId: selectedModel
       });
       onSectionUpdate(section.id, 'reviewNotes', result);
@@ -209,6 +211,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
         sectionName: section.name,
         sectionType: tableConfig.sectionType,
         guidelines: section.guidelines?.revision,
+        draftGuidelines: section.guidelines?.draft,
         modelId: selectedModel
       });
       
@@ -248,6 +251,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
           sectionName: section.name,
           sectionType: tableConfig.sectionType,
           guidelines: section.guidelines?.revision,
+          draftGuidelines: section.guidelines?.draft,
           fullTableData: tableData,
           modelId: selectedModel
         });
@@ -272,6 +276,7 @@ const TableWorkflow: React.FC<TableWorkflowProps> = ({
           sectionName: `${section.name} - Selected Rows`,
           sectionType: tableConfig.sectionType,
           guidelines: section.guidelines?.revision,
+          draftGuidelines: section.guidelines?.draft,
           modelId: selectedModel
         });
         

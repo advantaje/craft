@@ -133,6 +133,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
         sectionName: section.name,
         sectionType: section.type,
         guidelines: section.guidelines?.review,
+        draftGuidelines: section.guidelines?.draft,
         modelId: selectedModel
       });
       onSectionUpdate(section.id, 'reviewNotes', result);
@@ -154,6 +155,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
         sectionName: section.name,
         sectionType: section.type,
         guidelines: section.guidelines?.revision,
+        draftGuidelines: section.guidelines?.draft,
         modelId: selectedModel
       });
       
@@ -239,6 +241,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
         sectionName: section.name,
         sectionType: section.type,
         guidelines: section.guidelines?.review,
+        draftGuidelines: section.guidelines?.draft,
         fullDraft: section.data.draft,
         modelId: selectedModel
       });
@@ -265,6 +268,7 @@ const SectionWorkflow: React.FC<SectionWorkflowProps> = ({
         sectionName: section.name,
         sectionType: section.type,
         guidelines: section.guidelines?.revision,
+        draftGuidelines: section.guidelines?.draft,
         modelId: selectedModel
       });
       

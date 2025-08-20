@@ -146,14 +146,22 @@ class GenerateDraftFromReviewWithDiffHandler(BaseHandler):
             section_name = body.get('sectionName', 'Section')
             section_type = body.get('sectionType', 'default')
             guidelines = body.get('guidelines', None)
+            draft_guidelines = body.get('draftGuidelines', None)
             model_id = body.get('modelId', None)
             
             # Create generation service with specified model
             generation_service = GenerationService(model_id)
             
+            # Combine guidelines if both are provided
+            combined_guidelines = guidelines
+            if draft_guidelines and guidelines:
+                combined_guidelines = f"Original Draft Requirements:\n{draft_guidelines}\n\nRevision Guidelines:\n{guidelines}"
+            elif draft_guidelines and not guidelines:
+                combined_guidelines = f"Revise this draft while maintaining the original requirements:\n{draft_guidelines}"
+            
             # Use enhanced generation service method with diff computation
             result = generation_service.apply_review_notes_with_diff(
-                draft, review_notes, section_name, section_type, guidelines
+                draft, review_notes, section_name, section_type, combined_guidelines
             )
             
             # Check for errors
@@ -184,15 +192,23 @@ class GenerateRowFromReviewWithDiffHandler(BaseHandler):
             section_name = body.get('sectionName', 'Row')
             section_type = body.get('sectionType', None)
             guidelines = body.get('guidelines', None)
+            draft_guidelines = body.get('draftGuidelines', None)
             full_table_data = body.get('fullTableData', None)
             model_id = body.get('modelId', None)
             
             # Create generation service with specified model
             generation_service = GenerationService(model_id)
             
+            # Combine guidelines if both are provided
+            combined_guidelines = guidelines
+            if draft_guidelines and guidelines:
+                combined_guidelines = f"Original Draft Requirements:\n{draft_guidelines}\n\nRow Revision Guidelines:\n{guidelines}"
+            elif draft_guidelines and not guidelines:
+                combined_guidelines = draft_guidelines
+            
             # Use row review service method
             result = generation_service.review_table_row_with_diff(
-                row_data, review_notes, columns, section_name, section_type, guidelines, full_table_data
+                row_data, review_notes, columns, section_name, section_type, combined_guidelines, full_table_data
             )
             
             # Check for errors
@@ -221,14 +237,22 @@ class GenerateTableFromReviewWithDiffHandler(BaseHandler):
             section_name = body.get('sectionName', 'Table')
             section_type = body.get('sectionType', None)
             guidelines = body.get('guidelines', None)
+            draft_guidelines = body.get('draftGuidelines', None)
             model_id = body.get('modelId', None)
             
             # Create generation service with specified model
             generation_service = GenerationService(model_id)
             
+            # Combine guidelines if both are provided
+            combined_guidelines = guidelines
+            if draft_guidelines and guidelines:
+                combined_guidelines = f"Original Draft Requirements:\n{draft_guidelines}\n\nTable Revision Guidelines:\n{guidelines}"
+            elif draft_guidelines and not guidelines:
+                combined_guidelines = draft_guidelines
+            
             # Use table review service method
             result = generation_service.review_table_with_diff(
-                draft, review_notes, section_name, section_type, guidelines
+                draft, review_notes, section_name, section_type, combined_guidelines
             )
             
             # Check for errors
@@ -256,14 +280,22 @@ class GenerateReviewHandler(BaseHandler):
             section_name = body.get('sectionName', 'Section')
             section_type = body.get('sectionType', 'default')
             guidelines = body.get('guidelines', None)
+            draft_guidelines = body.get('draftGuidelines', None)
             model_id = body.get('modelId', None)
             
             # Create generation service with specified model
             generation_service = GenerationService(model_id)
             
+            # Combine guidelines if both are provided
+            combined_guidelines = guidelines
+            if draft_guidelines and guidelines:
+                combined_guidelines = f"Original Draft Requirements:\n{draft_guidelines}\n\nReview Guidelines:\n{guidelines}"
+            elif draft_guidelines and not guidelines:
+                combined_guidelines = f"Review this draft based on the original requirements:\n{draft_guidelines}"
+            
             # Use generation service with section context
             review = generation_service.generate_review_suggestions(
-                draft, section_name, section_type, guidelines
+                draft, section_name, section_type, combined_guidelines
             )
             
             response = {"result": review}
@@ -381,15 +413,23 @@ class GenerateReviewForSelectionHandler(BaseHandler):
             section_name = body.get('sectionName', 'Selection')
             section_type = body.get('sectionType', 'default')
             guidelines = body.get('guidelines', None)
+            draft_guidelines = body.get('draftGuidelines', None)
             full_draft = body.get('fullDraft', None)
             model_id = body.get('modelId', None)
             
             # Create generation service with specified model
             generation_service = GenerationService(model_id)
             
+            # Combine guidelines if both are provided
+            combined_guidelines = guidelines
+            if draft_guidelines and guidelines:
+                combined_guidelines = f"Original Draft Requirements:\n{draft_guidelines}\n\nSelection Review Guidelines:\n{guidelines}"
+            elif draft_guidelines and not guidelines:
+                combined_guidelines = f"Review this selection based on the original requirements:\n{draft_guidelines}"
+            
             # Use selection review service method
             result = generation_service.review_text_selection(
-                selected_text, context_before, context_after, section_name, section_type, guidelines, full_draft
+                selected_text, context_before, context_after, section_name, section_type, combined_guidelines, full_draft
             )
             
             # Check for errors
@@ -421,15 +461,23 @@ class ApplyReviewToSelectionWithDiffHandler(BaseHandler):
             section_name = body.get('sectionName', 'Selection')
             section_type = body.get('sectionType', 'default')
             guidelines = body.get('guidelines', None)
+            draft_guidelines = body.get('draftGuidelines', None)
             model_id = body.get('modelId', None)
             
             # Create generation service with specified model
             generation_service = GenerationService(model_id)
             
+            # Combine guidelines if both are provided
+            combined_guidelines = guidelines
+            if draft_guidelines and guidelines:
+                combined_guidelines = f"Original Draft Requirements:\n{draft_guidelines}\n\nSelection Revision Guidelines:\n{guidelines}"
+            elif draft_guidelines and not guidelines:
+                combined_guidelines = f"Revise this selection while maintaining the original requirements:\n{draft_guidelines}"
+            
             # Use selection application service method
             result = generation_service.apply_review_to_selection_with_diff(
                 full_draft, selected_text, selection_start, selection_end, 
-                review_notes, section_name, section_type, guidelines
+                review_notes, section_name, section_type, combined_guidelines
             )
             
             # Check for errors
