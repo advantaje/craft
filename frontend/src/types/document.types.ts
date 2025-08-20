@@ -105,6 +105,7 @@ export interface GenerateDocumentRequest {
 
 export interface GenerateDocumentResponse {
   downloadUrl?: string;
+  filename?: string;
 }
 
 export interface DiffSegment {

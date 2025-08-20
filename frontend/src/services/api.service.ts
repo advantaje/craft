@@ -92,10 +92,21 @@ export async function generateDocument(request: GenerateDocumentRequest): Promis
       responseType: 'blob'
     });
 
+    // Extract filename from Content-Disposition header
+    const contentDisposition = response.headers['content-disposition'];
+    let filename = `${request.documentId}.docx`; // fallback
+    
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename=([^;]+)/);
+      if (filenameMatch) {
+        filename = filenameMatch[1].replace(/"/g, ''); // remove quotes if present
+      }
+    }
+
     // Create a download URL for the blob
     const downloadUrl = window.URL.createObjectURL(response.data);
     
-    return { downloadUrl };
+    return { downloadUrl, filename };
   } catch (error) {
     console.error(`API Error: /api/generate-document`, error);
     throw error;

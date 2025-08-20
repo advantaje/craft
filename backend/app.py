@@ -339,8 +339,15 @@ class GenerateDocumentHandler(BaseHandler):
                 self.write(json.dumps({"error": "Failed to generate document"}))
                 return
             
-            # Generate filename
-            filename = self.document_service.get_filename(document_id, 'docx')
+            # Extract tier from document_data and generate custom filename
+            tier = ""
+            if document_data and 'tier' in document_data:
+                tier_value = document_data['tier'].get('value', '')
+                if tier_value:
+                    tier = str(tier_value)
+
+            # Generate custom filename: REVIEWID_TIER.docx
+            filename = f"{document_id}_{tier}.docx" if tier else f"{document_id}.docx"
             
             # Get the document content as bytes
             doc_content = doc_buffer.getvalue()
