@@ -22,7 +22,7 @@ from services.review_data_service import get_raw_review_data
 uploaded_templates = {}
 
 
-class BaseHandler(tornado.web.RequestHandler):
+class ServiceHandler(tornado.web.RequestHandler):
     def set_default_headers(self):
         self.set_header("Access-Control-Allow-Origin", "*")
         self.set_header("Access-Control-Allow-Headers", "Content-Type")
@@ -34,7 +34,7 @@ class BaseHandler(tornado.web.RequestHandler):
         self.finish()
 
 
-class HelloHandler(BaseHandler):
+class HelloHandler(ServiceHandler):
     def get(self):
         response = {
             "result": {
@@ -46,7 +46,7 @@ class HelloHandler(BaseHandler):
         self.write(json.dumps(response))
 
 
-class ReviewLookupHandler(BaseHandler):
+class ReviewLookupHandler(ServiceHandler):
     # Field mapping from internal names to display-friendly names for frontend
     DISPLAY_FIELD_MAPPING = {
         'review_id': 'Review ID',
@@ -106,7 +106,7 @@ class ReviewLookupHandler(BaseHandler):
 
 
 
-class GenerateDraftFromNotesHandler(BaseHandler):
+class GenerateDraftFromNotesHandler(ServiceHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -135,7 +135,7 @@ class GenerateDraftFromNotesHandler(BaseHandler):
             self.write(json.dumps({"error": str(e)}))
 
 
-class GenerateDraftFromReviewWithDiffHandler(BaseHandler):
+class GenerateDraftFromReviewWithDiffHandler(ServiceHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -179,7 +179,7 @@ class GenerateDraftFromReviewWithDiffHandler(BaseHandler):
             self.write(json.dumps({"error": str(e)}))
 
 
-class GenerateRowFromReviewWithDiffHandler(BaseHandler):
+class GenerateRowFromReviewWithDiffHandler(ServiceHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -226,7 +226,7 @@ class GenerateRowFromReviewWithDiffHandler(BaseHandler):
             self.write(json.dumps({"error": str(e)}))
 
 
-class GenerateTableFromReviewWithDiffHandler(BaseHandler):
+class GenerateTableFromReviewWithDiffHandler(ServiceHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -270,7 +270,7 @@ class GenerateTableFromReviewWithDiffHandler(BaseHandler):
             self.write(json.dumps({"error": str(e)}))
 
 
-class GenerateReviewHandler(BaseHandler):
+class GenerateReviewHandler(ServiceHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -307,7 +307,7 @@ class GenerateReviewHandler(BaseHandler):
             self.write(json.dumps({"error": str(e)}))
 
 
-class GenerateDocumentHandler(BaseHandler):
+class GenerateDocumentHandler(ServiceHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.document_service = DocumentGenerationService(uploaded_templates)
@@ -339,16 +339,9 @@ class GenerateDocumentHandler(BaseHandler):
                 self.set_status(500)
                 self.write(json.dumps({"error": "Failed to generate document"}))
                 return
-            
-            # Extract tier from document_data and generate custom filename
-            tier = ""
-            if document_data and 'tier' in document_data:
-                tier_value = document_data['tier'].get('value', '')
-                if tier_value:
-                    tier = str(tier_value)
 
             # Generate custom filename: REVIEWID_TIER.docx
-            filename = f"{document_id}_{tier}.docx" if tier else f"{document_id}.docx"
+            filename = f"CRAFT_{document_id}.docx"
             
             # Get the document content as bytes
             doc_content = doc_buffer.getvalue()
@@ -367,7 +360,7 @@ class GenerateDocumentHandler(BaseHandler):
 
 
 
-class UploadTemplateHandler(BaseHandler):
+class UploadTemplateHandler(ServiceHandler):
     def post(self):
         try:
             if 'template' not in self.request.files:
@@ -408,7 +401,7 @@ class UploadTemplateHandler(BaseHandler):
             self.write(json.dumps({"error": str(e)}))
 
 
-class GenerateReviewForSelectionHandler(BaseHandler):
+class GenerateReviewForSelectionHandler(ServiceHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -452,7 +445,7 @@ class GenerateReviewForSelectionHandler(BaseHandler):
             self.write(json.dumps({"error": str(e)}))
 
 
-class ApplyReviewToSelectionWithDiffHandler(BaseHandler):
+class ApplyReviewToSelectionWithDiffHandler(ServiceHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

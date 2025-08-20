@@ -91,7 +91,7 @@ const FileGenerationModal: React.FC<FileGenerationModalProps> = ({
         setProgress(100);
         setStatusMessage('Document ready for download!');
         setDownloadUrl(result.downloadUrl);
-        setFilename(result.filename || `${documentId}.docx`);
+        setFilename(result.filename || `CRAFT_${documentId}.docx`);
       } else {
         setState('error');
         setError('Failed to generate document');

@@ -71,20 +71,27 @@ class GenerationService:
             # Set temperature based on model
             temperature = 1.0 if self.model == 'o4-mini-2025-04-16' else 0.0
             
-            # Make API call
-            call_kwargs = {
-                'deployment_id': self.model,
-                'messages': [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": prompt}
-                ],
-                'temperature': temperature
-            }
-            
+            # Make API call with direct parameters
             if response_format:
-                call_kwargs['response_format'] = response_format
-            
-            response = self.client.chat.completions.create(**call_kwargs)
+                response = self.client.chat.completions.create(
+                    deployment_id=self.model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=temperature,
+                    response_format=response_format
+                )
+            else:
+                response = self.client.chat.completions.create(
+                    deployment_id=self.model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=temperature
+                )
+                
             return response.choices[0].message.content.strip()
             
         except Exception as e:

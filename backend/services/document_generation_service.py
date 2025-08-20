@@ -162,19 +162,3 @@ class DocumentGenerationService:
                 formatted_content.append(line)
         
         return "\n".join(formatted_content)
-    
-    
-    def get_filename(self, document_id: str, file_type: str = 'docx') -> str:
-        """
-        Generate a filename for the document
-        
-        Args:
-            document_id: The document ID
-            file_type: File extension (always 'docx')
-            
-        Returns:
-            Suggested filename
-        """
-        safe_id = "".join(c for c in document_id if c.isalnum() or c in ('-', '_'))
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        return f"document_{safe_id}_{timestamp}.docx"
