@@ -226,14 +226,16 @@ IMPORTANT: Return the improved table data in the EXACT same JSON format. You may
             # Make direct API call with structured output format
             system_prompt = "You are an expert at improving table data based on feedback. Always return valid JSON in the exact format requested."
             
+            # Set temperature based on model
+            temperature = 1.0 if self.model == 'o4-mini-2025-04-16' else 0.0
+            
             response = self.client.chat.completions.create(
-                model=self.model,
+                deployment_id=self.model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.7,
-                max_tokens=1000,
+                temperature=temperature,
                 response_format=JsonSchemaService.get_structured_output_format(section_type, "row_update")
             )
             
@@ -307,14 +309,16 @@ IMPORTANT: Return the improved table data in the EXACT same JSON format with all
             # Make API call with structured output format
             system_prompt = "You are an expert at improving table data based on feedback. Always return valid JSON in the exact format requested."
             
+            # Set temperature based on model
+            temperature = 1.0 if self.model == 'o4-mini-2025-04-16' else 0.0
+            
             response = self.client.chat.completions.create(
-                model=self.model,
+                deployment_id=self.model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.7,
-                max_tokens=2000,
+                temperature=temperature,
                 response_format=JsonSchemaService.get_structured_output_format(section_type, "table_update")
             )
             
