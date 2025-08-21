@@ -1,61 +1,32 @@
 # 🎨 CRAFT - AI-Powered Document Planning & Drafting System
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-4.5+-blue.svg)](https://typescriptlang.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-4.9+-blue.svg)](https://typescriptlang.org)
 [![React](https://img.shields.io/badge/React-17+-blue.svg)](https://reactjs.org)
 [![Material-UI](https://img.shields.io/badge/Material--UI-4.12+-blue.svg)](https://mui.com)
 
-CRAFT is a sophisticated full-stack application that transforms document creation through AI-powered assistance. It combines intelligent content generation with iterative improvement cycles to produce high-quality professional documents efficiently.
+CRAFT is a sophisticated full-stack application that revolutionizes document creation through AI-powered assistance. It combines intelligent content generation with iterative improvement cycles to produce high-quality professional documents efficiently.
 
 ## ✨ Key Features
 
-- **🤖 AI-Powered Content Generation** - Generate drafts from simple notes using GPT-4
-- **🔄 Iterative Improvement Cycle** - AI reviews, suggests improvements, and applies feedback
+- **🤖 AI-Powered Content Generation** - Generate drafts from simple notes using GPT-4 and other OpenAI models
+- **🔄 Iterative Improvement Cycle** - AI reviews, suggests improvements, and applies feedback with user approval
 - **📊 Structured Table Management** - Create and manage complex data tables with AI assistance
 - **🎯 Section-Based Workflow** - Organize documents into manageable, focused sections
-- **📝 Intelligent Diff Visualization** - See exactly what changes before applying them
+- **📝 Intelligent Diff Visualization** - See exactly what changes before applying them with multiple view modes
 - **📄 Professional Document Export** - Generate polished Word documents with custom templates
 - **⚙️ Customizable AI Guidelines** - Fine-tune AI behavior for different section types
 - **🎨 Rich User Interface** - Intuitive Material-UI components with progress tracking
+- **🎯 Text Selection Review** - Target specific portions of text for AI improvement
+- **📱 Persistent Sessions** - Auto-save progress with browser localStorage
 
-## 🏗️ Architecture
-
-CRAFT is built as a modern full-stack application with clear separation of concerns:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                   Frontend (React/TypeScript)              │
-│  Material-UI Components │ State Management │ API Client    │
-├─────────────────────────────────────────────────────────────┤
-│                   HTTP/JSON API Layer                      │
-│              RESTful Endpoints │ Request/Response           │
-├─────────────────────────────────────────────────────────────┤
-│                   Backend (Python/Tornado)                 │
-│  Business Logic │ OpenAI Integration │ Document Generation │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Frontend Stack
-- **React 17** with TypeScript for type safety
-- **Material-UI v4** for consistent, professional UI components
-- **Custom hooks** for state management and business logic
-- **Axios** for HTTP communication
-- **Real-time diff visualization** with multiple viewing modes
-
-### Backend Stack
-- **Python 3.8+** with Tornado web framework
-- **OpenAI GPT-4** integration for content generation
-- **Structured JSON schemas** for table data validation
-- **Word document generation** with Jinja2 templating
-- **Modular service architecture** for maintainability
-
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
 
 - **Python 3.8+** with pip
 - **Node.js 14+** with npm
-- **OpenAI API Key** (for AI functionality)
+- **OpenAI API Key** (required for AI functionality)
 
 ### Installation
 
@@ -80,102 +51,132 @@ CRAFT is built as a modern full-stack application with clear separation of conce
    ```
 
 4. **Environment Configuration**
-   ```bash
-   # Backend: Create .env file in backend/
-   OPENAI_API_KEY=your_openai_api_key_here
-   PORT=8888
    
-   # Frontend: Create .env file in frontend/
-   REACT_APP_API_BASE_URL=http://localhost:8888
+   Create a `.env` file in the `backend/` directory (or set environment variables):
+   ```bash
+   OPENAI_API_KEY=your_openai_api_key_here
+   HOST=0.0.0.0
+   PORT=8888
    ```
 
 ### Running the Application
 
-1. **Start the Backend**
+1. **Start the Backend Server**
    ```bash
    cd backend
-   source venv/bin/activate
-   python app.py
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   python server.py
    ```
+   Server will start on `http://localhost:8888`
 
 2. **Start the Frontend** (in a new terminal)
    ```bash
    cd frontend
    npm start
    ```
-
-3. **Access the Application**
-   - Open http://localhost:3000 in your browser
-   - The backend API will be running on http://localhost:8888
+   Application will open at `http://localhost:3000`
 
 ## 📖 How It Works
 
 ### Document Creation Workflow
 
-1. **📋 Document Setup**
-   - Enter Review ID to fetch document metadata
-   - Choose default or custom Word template
-   - Setup must be complete before proceeding
+CRAFT follows a structured, AI-assisted approach to document creation:
 
-2. **📝 Section-Based Content Creation**
-   CRAFT organizes documents into focused sections:
-   
-   **Text Sections:**
-   - **Background**: Historical context and previous work
-   - **Product**: Key findings and recommendations
-   - **Usage**: Step-by-step implementation instructions
-   
-   **Table Sections:**
-   - **Model Limitations**: Technical constraints and scope boundaries
-   - **Model Risk Issues**: Risk assessment with categorization and importance levels
+#### 1. **📋 Document Setup**
+- Enter Review ID to fetch document metadata (or work without metadata)
+- Choose default template or upload custom Word template
+- Configure AI model selection (GPT-4, GPT-4-mini, etc.)
 
-3. **🔄 AI-Powered Iterative Improvement**
-   Each section follows a sophisticated 4-step workflow:
-   
-   ```
-   Notes Input → AI Draft Generation → AI Review & Feedback → Apply Improvements
-   ```
-   
-   - **Notes**: User provides initial thoughts and requirements
-   - **Draft**: AI generates structured content from notes
-   - **Review**: AI analyzes draft and suggests specific improvements
-   - **Revision**: AI applies feedback with diff preview for user approval
+#### 2. **📝 Section-Based Content Creation**
+CRAFT organizes documents into focused sections:
 
-4. **📄 Professional Document Export**
-   - Generate Word documents using default or custom templates
-   - Automatic placeholder mapping (e.g., `{{background}}`, `{{model_limitations}}`)
-   - Support for both text content and formatted tables
+**Text Sections:**
+- **Background**: Historical context and previous work
+- **Product**: Key findings and recommendations  
+- **Usage**: Step-by-step implementation instructions
+- **Custom Sections**: Add your own section types
 
-### Advanced Features
+**Table Sections:**
+- **Model Limitations**: Technical constraints with categorization
+- **Model Risk Issues**: Risk assessment with importance levels
+- **Extensible**: Easy to add new table types
 
-#### 🎯 Text Selection & Targeted Review
-- Select specific text portions for focused AI review
-- Apply improvements only to selected content
-- Context-aware AI considers surrounding text
+#### 3. **🔄 AI-Powered Iterative Improvement**
+Each section follows a sophisticated 4-step workflow:
 
-#### 📊 Smart Table Management
-- Interactive table editor with validation
-- Multi-row selection for batch operations
-- AI-powered table generation from natural language descriptions
-- Support for different data types (text, select dropdowns, numbers, dates)
+```
+User Notes → AI Draft Generation → AI Review & Feedback → Apply Improvements → Finalize
+```
 
-#### 🔍 Intelligent Diff Visualization
-Multiple viewing modes for reviewing changes:
-- **Unified View**: Single pane with highlighted additions/deletions
-- **Side by Side**: Clean comparison view
-- **Side by Side (Highlighted)**: Detailed change visualization
+- **Notes**: Provide initial thoughts and requirements
+- **Draft**: AI generates structured content from notes
+- **Review**: AI analyzes draft and suggests specific improvements
+- **Revision**: AI applies feedback with diff preview for user approval
 
-#### ⚙️ Customizable AI Guidelines
-- Section-specific AI behavior customization
-- Three operation types: Draft Writing, Review & Feedback, Revision Process
-- Per-section guidelines with reset to defaults option
+#### 4. **📄 Professional Document Export**
+- Generate Word documents using default or custom templates
+- Automatic placeholder mapping (e.g., `{{background}}`, `{{model_limitations}}`)
+- Support for both text content and formatted tables
+
+## 🏗️ Architecture
+
+CRAFT is built as a modern full-stack application:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   Frontend (React/TypeScript)              │
+│  Material-UI Components │ State Management │ API Client    │
+├─────────────────────────────────────────────────────────────┤
+│                   HTTP/JSON API Layer                      │
+│              RESTful Endpoints │ Request/Response           │
+├─────────────────────────────────────────────────────────────┤
+│                   Backend (Python/Tornado)                 │
+│  Business Logic │ OpenAI Integration │ Document Generation │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Technology Stack
+
+**Frontend:**
+- **React 17** with TypeScript for type safety
+- **Material-UI v4** for consistent, professional UI components
+- **Custom hooks** for state management and business logic
+- **Axios** for HTTP communication
+- **Real-time diff visualization** with multiple viewing modes
+
+**Backend:**
+- **Python 3.8+** with Tornado async web framework
+- **OpenAI GPT-4** integration for content generation
+- **Structured JSON schemas** for table data validation
+- **Word document generation** with template processing
+- **Modular service architecture** for maintainability
 
 ## 📁 Project Structure
 
 ```
 craft/
+├── frontend/                   # React TypeScript frontend
+│   └── src/
+│       ├── components/        # React UI components
+│       │   ├── Craft.tsx     # Main application shell
+│       │   ├── DocumentSetup.tsx     # Review lookup & template selection
+│       │   ├── SectionWorkflow.tsx   # Text section handler
+│       │   ├── TableWorkflow.tsx     # Table section handler
+│       │   └── DiffViewer.tsx        # Change visualization
+│       ├── hooks/             # Custom React hooks
+│       │   ├── useDocumentSections.ts # Section state management
+│       │   └── useLocalStorage.ts     # Persistent storage
+│       ├── services/          # API communication layer
+│       │   └── api.service.ts # HTTP client for backend APIs
+│       ├── types/             # TypeScript type definitions
+│       ├── config/            # Configuration files
+│       │   ├── defaultGuidelines.ts  # AI behavior guidelines
+│       │   ├── tableConfigurations.ts # Table column definitions
+│       │   └── modelConfigurations.ts # AI model settings
+│       └── utils/             # Utility functions
+│
 ├── backend/                    # Python Tornado backend
-│   ├── app.py                 # Main application entry point
+│   ├── server.py              # Main application entry point
 │   ├── prompts/               # AI prompt templates
 │   │   └── section_prompts.py # Section-specific prompt logic
 │   └── services/              # Business logic modules
@@ -184,102 +185,84 @@ craft/
 │       ├── diff_service.py           # Text comparison utilities
 │       ├── json_schema_service.py    # Table structure definitions
 │       ├── openai_tools.py           # OpenAI API integration
-│       ├── review_data_service.py    # Data retrieval
+│       ├── review_data_service.py    # Data retrieval services
 │       └── template_service.py       # Word template processing
 │
-├── frontend/                   # React TypeScript frontend
-│   └── src/
-│       ├── components/        # React UI components
-│       │   ├── About.tsx     # User guide and help
-│       │   ├── Craft.tsx     # Main application shell
-│       │   ├── DocumentSetup.tsx     # Review lookup & template selection
-│       │   ├── SectionWorkflow.tsx   # Text section handler
-│       │   ├── TableWorkflow.tsx     # Table section handler
-│       │   ├── DiffViewer.tsx        # Change visualization
-│       │   └── [other components]
-│       ├── hooks/             # Custom React hooks
-│       │   └── useDocumentSections.ts # Section state management
-│       ├── services/          # API communication layer
-│       │   └── api.service.ts # HTTP client for backend APIs
-│       ├── types/             # TypeScript type definitions
-│       │   └── document.types.ts     # Core data structures
-│       ├── config/            # Configuration files
-│       │   ├── defaultGuidelines.ts  # AI behavior guidelines
-│       │   └── tableConfigurations.ts # Table column definitions
-│       └── utils/             # Utility functions
-│
 ├── CONFIGURATION.md           # Customization guide
-├── DEVELOPER_GUIDE.md         # Developer onboarding
 └── README.md                  # This file
 ```
 
-## 🎛️ Configuration & Customization
+## ⚙️ Configuration
 
 CRAFT is highly customizable through configuration files:
 
-### Adding New Sections
-- **Frontend**: Modify `useDocumentSections.ts` and `defaultGuidelines.ts`
-- **Backend**: Update `section_prompts.py` for new section types
+### AI Model Selection
+- Support for multiple OpenAI models (GPT-4, GPT-4-mini, o4-mini)
+- User-selectable model in the UI
+- Model-specific optimizations (temperature, response format)
 
-### Table Structure Customization
-- **Frontend**: Edit `tableConfigurations.ts` for UI definitions
-- **Backend**: Update `json_schema_service.py` for validation schemas
-- **⚠️ Important**: Frontend and backend table configs must match exactly
+### Section Types
+- Add new text sections in `frontend/src/hooks/useDocumentSections.ts`
+- Define table sections in `frontend/src/config/tableConfigurations.ts`
+- Configure AI guidelines in `frontend/src/config/defaultGuidelines.ts`
 
-### AI Behavior Modification
-- **Guidelines**: Customize `defaultGuidelines.ts` for section-specific behavior
-- **Prompts**: Modify `section_prompts.py` for fundamental prompt changes
+### Table Customization
+- Modify column definitions in both frontend and backend configurations
+- Support for text, number, select, and date field types
+- Custom validation rules and requirements
 
-See [CONFIGURATION.md](./CONFIGURATION.md) for detailed customization instructions.
+**⚠️ Important**: Frontend and backend table configurations must match exactly.
 
-## 🛠️ Development
-
-### For New Developers
-If you're new to this codebase, especially coming from a Python background, see our comprehensive [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) which includes:
-
-- Full-stack architecture explanation
-- Frontend concepts for Python developers
-- Data flow walkthroughs
-- Common debugging techniques
-- Step-by-step feature addition guides
+## 🔧 Development
 
 ### API Endpoints
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
-| `/api/review-lookup` | POST | Fetch document metadata by Review ID |
+| `/api/review-lookup` | GET | Fetch document metadata by Review ID |
 | `/api/generate-draft-from-notes` | POST | Generate initial content from user notes |
 | `/api/generate-review` | POST | AI analysis and feedback generation |
 | `/api/generate-draft-from-review-with-diff` | POST | Apply feedback with diff tracking |
+| `/api/generate-row-from-review-with-diff` | POST | Apply feedback to table rows |
+| `/api/generate-table-from-review-with-diff` | POST | Apply feedback to entire tables |
+| `/api/generate-review-for-selection` | POST | Review selected text portions |
+| `/api/apply-review-to-selection-with-diff` | POST | Apply review to text selections |
 | `/api/generate-document` | POST | Create final Word document |
 | `/api/upload-template` | POST | Upload custom Word templates |
 
-### Technology Choices
+### Adding New Features
 
-**Frontend:**
-- **React 17**: Mature, stable version with excellent ecosystem
-- **TypeScript**: Static typing for better development experience
-- **Material-UI v4**: Consistent, professional UI components
-- **Custom hooks**: Clean separation of business logic from UI
+1. **New Section Types**: Modify configuration files in both frontend and backend
+2. **Custom AI Guidelines**: Update `defaultGuidelines.ts` for section-specific behavior
+3. **Table Columns**: Ensure frontend and backend configurations stay synchronized
+4. **New Endpoints**: Follow the existing pattern in `server.py` and corresponding frontend services
 
-**Backend:**
-- **Tornado**: High-performance async Python web framework
-- **OpenAI GPT-4**: State-of-the-art language model for content generation
-- **python-docx**: Word document manipulation
-- **Jinja2**: Template rendering for document generation
+## 🔒 Security & Privacy
+
+- **API Key Security**: OpenAI keys stored server-side only, never exposed to frontend
+- **Data Privacy**: All document data stored locally in browser storage only
+- **No Server Persistence**: Backend doesn't permanently store user data
+- **Template Safety**: Custom templates processed without macro execution
+- **CORS Protection**: Properly configured cross-origin resource sharing
+
+## 📊 System Requirements
+
+### Minimum Requirements
+- **RAM**: 4GB (8GB recommended for large documents)
+- **Storage**: 2GB free space for dependencies
+- **Network**: Stable internet connection for OpenAI API calls
+
+### Performance Notes
+- AI generation typically takes 3-10 seconds per operation
+- Document export is nearly instantaneous  
+- Frontend optimized for modern browsers (Chrome, Firefox, Safari, Edge)
 
 ## 🤝 Contributing
 
 1. **Fork the repository**
 2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Make your changes**
-   - Follow existing code patterns
-   - Add tests for new functionality
-   - Update documentation as needed
-4. **Test thoroughly**
-   - Test both frontend and backend changes
-   - Verify AI generation still works
-   - Check document export functionality
+3. **Make your changes** following existing code patterns
+4. **Test thoroughly** (both frontend and backend)
 5. **Submit a pull request**
 
 ### Code Style
@@ -294,65 +277,19 @@ If you're new to this codebase, especially coming from a Python background, see 
 - Prefer `const` assertions and explicit typing
 - Follow React best practices for state management
 
-### Manual Testing
-1. Complete document creation workflow
-2. Test all AI generation features
-3. Verify Word document export
-4. Test custom template upload
-5. Validate table operations
-
-## 📊 System Requirements
-
-### Minimum Requirements
-- **RAM**: 4GB (8GB recommended)
-- **Storage**: 2GB free space
-- **Network**: Stable internet connection for OpenAI API calls
-
-### Performance Considerations
-- AI generation typically takes 3-10 seconds per operation
-- Document export is nearly instantaneous
-- Frontend is optimized for modern browsers (Chrome, Firefox, Safari, Edge)
-
-## 🔒 Security & Privacy
-
-- **API Keys**: Never commit OpenAI API keys to version control
-- **Data Storage**: All document data is stored locally in browser storage
-- **Network**: All AI requests are made server-side to protect API credentials
-- **Templates**: Custom templates are processed securely without executing macros
-
-## 📈 Roadmap
-
-- [ ] **Enhanced AI Models**: Support for different OpenAI models and providers
-- [ ] **Collaboration Features**: Multi-user document editing
-- [ ] **Version Control**: Document history and branching
-- [ ] **Advanced Templates**: More sophisticated template customization
-- [ ] **Export Formats**: PDF, HTML, and Markdown export options
-- [ ] **Offline Mode**: Basic functionality without AI assistance
-
-## 🐛 Known Issues
-
-- **Large Documents**: Performance may degrade with very large documents (>50 sections)
-- **Internet Dependency**: AI features require stable internet connection
-- **Browser Storage**: Clearing browser data will lose unsaved work
-- **Template Complexity**: Very complex Word templates may not render perfectly
-
-## 📜 License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- **OpenAI** for providing the GPT-4 API that powers our AI features
+- **OpenAI** for providing the GPT models that power our AI features
 - **Material-UI Team** for the excellent React component library
 - **Tornado Team** for the robust async Python web framework
 - **React Team** for the incredible frontend framework
 
-## 📞 Support
-
-- **Documentation**: See [CONFIGURATION.md](./CONFIGURATION.md) and [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)
-- **Issues**: Please report bugs and feature requests through GitHub issues
-- **Questions**: For general questions about usage or development
-
 ---
 
 **Built with ❤️ for creating better documents through AI assistance.**
+
+For detailed configuration and customization instructions, see [CONFIGURATION.md](./CONFIGURATION.md).

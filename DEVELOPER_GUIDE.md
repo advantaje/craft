@@ -1,600 +1,634 @@
-# 🚀 CRAFT Developer Guide
+# 🚀 CRAFT Developer Guide for Python Developers
 
-Welcome to CRAFT! This guide is designed for developers with strong Python backgrounds who are new to frontend development or this codebase. We'll walk through the entire stack architecture, how components work together, and provide practical guidance for working with this TypeScript React + Python system.
+Welcome to CRAFT! If you're here, you're probably a Python developer who needs to work with this full-stack application. Don't worry - while the frontend might look intimidating at first, it's really just Python concepts with different syntax. This guide will get you productive quickly.
 
 ## 📋 Table of Contents
 
-1. [System Overview](#-system-overview)
-2. [Backend Architecture (Python)](#-backend-architecture-python)
-3. [Frontend Architecture (TypeScript React)](#-frontend-architecture-typescript-react)
-4. [Communication Layer](#-communication-layer)
-5. [Data Flow Walkthrough](#-data-flow-walkthrough)
-6. [Key Concepts for Python Developers](#-key-concepts-for-python-developers)
-7. [Development Workflow](#-development-workflow)
-8. [Debugging & Troubleshooting](#-debugging--troubleshooting)
-9. [Common Tasks](#-common-tasks)
+1. [Introduction & Mindset](#-introduction--mindset)
+2. [Frontend Crash Course for Python Developers](#-frontend-crash-course-for-python-developers)
+3. [Understanding the Full-Stack Architecture](#-understanding-the-full-stack-architecture)
+4. [Essential Frontend Concepts (Python Analogies)](#-essential-frontend-concepts-python-analogies)
+5. [Step-by-Step Practical Examples](#-step-by-step-practical-examples)
+6. [Configuration System Explained](#-configuration-system-explained)
+7. [Debugging Guide for Python Developers](#-debugging-guide-for-python-developers)
+8. [Development Workflow](#-development-workflow)
+9. [Common Pitfalls & Solutions](#-common-pitfalls--solutions)
+10. [Quick Reference Tables](#-quick-reference-tables)
+11. [Advanced Topics](#-advanced-topics)
+12. [Resources & Next Steps](#-resources--next-steps)
 
-## 🎯 System Overview
+## 🎯 Introduction & Mindset
 
-CRAFT is a full-stack AI-powered document generation system with a clean separation between frontend and backend:
+As a Python developer, you already understand:
+- ✅ Classes, objects, and inheritance
+- ✅ Functions and parameters
+- ✅ Data structures (lists, dicts)
+- ✅ API design and HTTP communication
+- ✅ Async/await patterns
+- ✅ Error handling and debugging
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    USER INTERFACE                           │
-│  React Components (TypeScript) - Material-UI               │
-├─────────────────────────────────────────────────────────────┤
-│                    API LAYER                                │
-│  HTTP Requests (Axios) ↔ Tornado REST API                  │
-├─────────────────────────────────────────────────────────────┤
-│                    BUSINESS LOGIC                           │
-│  Python Services - OpenAI Integration - Document Gen       │
-└─────────────────────────────────────────────────────────────┘
-```
+**Good news**: The frontend uses all these same concepts! React components are just classes that return HTML. State management is like instance variables. API calls work exactly like `requests.post()`.
 
-**Think of it like this (Python analogy):**
-- **Frontend** = A rich GUI client (like a desktop app with forms, buttons, tables)
-- **Backend** = Your familiar Python web service with API endpoints
-- **Communication** = JSON over HTTP (just like calling `requests.post()`)
+**Your advantage**: You understand the backend completely, so you only need to learn how the frontend talks to it.
 
-## 🐍 Backend Architecture (Python)
+## ⚛️ Frontend Crash Course for Python Developers
 
-The backend will feel familiar - it's organized like a typical Python web service:
+### JavaScript/TypeScript Basics (30 seconds)
 
-### Directory Structure
-```
-backend/
-├── app.py                          # Main Tornado application (like Flask app.py)
-├── prompts/
-│   └── section_prompts.py         # Prompt templates (like Jinja2 templates)
-└── services/                      # Business logic modules
-    ├── generation_service.py      # Core AI generation logic
-    ├── document_generation_service.py  # Word document creation
-    ├── diff_service.py           # Text comparison utilities
-    ├── json_schema_service.py    # Table structure definitions
-    ├── openai_tools.py           # OpenAI API wrapper
-    ├── review_data_service.py    # Database-like data retrieval
-    └── template_service.py       # Word template processing
-```
-
-### Core Components
-
-#### 1. Main Application (`app.py`)
 ```python
-# Similar to Flask setup
-class Application(tornado.web.Application):
+# Python
+def my_function(param):
+    my_var = "hello"
+    my_list = [1, 2, 3]
+    my_dict = {"key": "value"}
+    return f"{my_var} {param}"
+
+# JavaScript/TypeScript (same logic, different syntax)
+function myFunction(param: string): string {
+    const myVar = "hello";
+    const myList = [1, 2, 3];
+    const myDict = {"key": "value"};
+    return `${myVar} ${param}`;
+}
+```
+
+### React Components = Python Classes That Return HTML
+
+```python
+# Python class
+class DocumentSection:
+    def __init__(self, title, content):
+        self.title = title
+        self.content = content
+        self.is_completed = False
+    
+    def render(self):
+        status = "✅" if self.is_completed else "⏳"
+        return f"<h2>{status} {self.title}</h2><p>{self.content}</p>"
+```
+
+```typescript
+// React component (same concept!)
+const DocumentSection: React.FC = () => {
+    const [title, setTitle] = useState('Background');
+    const [content, setContent] = useState('');
+    const [isCompleted, setIsCompleted] = useState(false);
+    
+    // This "returns HTML" like your Python render method
+    return (
+        <div>
+            <h2>{isCompleted ? '✅' : '⏳'} {title}</h2>
+            <p>{content}</p>
+        </div>
+    );
+};
+```
+
+### Key Insight: State = Instance Variables + Auto-Refresh
+
+In Python, if you change an instance variable, nothing happens visually. In React, when you change state, the UI automatically updates.
+
+```python
+# Python - changes don't update UI automatically
+class MyClass:
     def __init__(self):
-        handlers = [
-            (r"/api/generate-draft-from-notes", GenerateDraftFromNotesHandler),
-            (r"/api/generate-review", GenerateReviewHandler),
-            # ... more endpoints
-        ]
-        super().__init__(handlers, **settings)
-
-# Request handlers - like Flask routes
-class GenerateDraftFromNotesHandler(tornado.web.RequestHandler):
-    async def post(self):
-        data = json.loads(self.request.body)
-        result = await generation_service.generate_draft_from_notes(data)
-        self.write({"content": result})
+        self.count = 0
+    
+    def increment(self):
+        self.count += 1  # UI doesn't know this changed
 ```
 
-#### 2. Service Layer (`services/`)
-**This is where your Python skills shine!** Services are organized like typical Python modules:
-
-```python
-# generation_service.py - Main AI logic
-async def generate_draft_from_notes(request_data):
-    """Like a typical Python function that processes data"""
-    notes = request_data.get('notes')
-    section_type = request_data.get('sectionType')
+```typescript
+// React - changes automatically update UI
+const MyComponent = () => {
+    const [count, setCount] = useState(0);
     
-    # Build prompt using template
-    prompt = SectionPrompts.get_draft_prompt(section_type, notes)
-    
-    # Call AI service
-    result = await openai_tools.generate_content(prompt)
-    return result
-
-# openai_tools.py - External API wrapper
-async def generate_content(prompt, schema=None):
-    """Wrapper around OpenAI API - like requests.post() but async"""
-    client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    
-    response = await client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        response_format=schema if schema else None
-    )
-    
-    return response.choices[0].message.content
+    const increment = () => {
+        setCount(count + 1);  // UI automatically re-renders!
+    };
+};
 ```
 
-#### 3. Key Patterns You'll Recognize
+## 🏗️ Understanding the Full-Stack Architecture
 
-**Configuration Objects** (like Python dataclasses):
+Think of it like this:
+
 ```python
-# json_schema_service.py
+# Your familiar backend world
+@app.route('/api/generate-draft', methods=['POST'])
+def generate_draft():
+    data = request.get_json()
+    result = ai_service.generate_content(data)
+    return jsonify({"result": result})
+```
+
+```typescript
+// Frontend makes the same call you would with requests.post()
+const generateDraft = async (data) => {
+    const response = await axios.post('/api/generate-draft', data);
+    return response.data.result;
+};
+```
+
+### Data Flow (Familiar Pattern)
+
+1. **User clicks button** (like calling a Python function)
+2. **Frontend makes HTTP request** (like `requests.post()`)
+3. **Backend processes request** (your familiar Python code)
+4. **Backend returns JSON** (like returning a dict)
+5. **Frontend updates UI** (like printing the result, but prettier)
+
+## 💡 Essential Frontend Concepts (Python Analogies)
+
+### Components = Classes
+```typescript
+// This is basically a Python class that returns HTML
+const SectionWorkflow: React.FC<Props> = ({ section, onUpdate }) => {
+    // Class body equivalent
+    const [loading, setLoading] = useState(false);
+    
+    // Class method equivalent
+    const handleSubmit = () => {
+        // Method logic here
+    };
+    
+    // __str__ method equivalent (returns what to display)
+    return <div>HTML content here</div>;
+};
+```
+
+### Props = Function Parameters
+```python
+# Python function parameters
+def process_section(section_data, callback_function):
+    # Use section_data and callback_function
+```
+
+```typescript
+// React props (same concept)
+interface Props {
+    sectionData: SectionData;
+    onUpdate: (data: string) => void;
+}
+
+const MyComponent: React.FC<Props> = ({ sectionData, onUpdate }) => {
+    // Use sectionData and onUpdate
+};
+```
+
+### Hooks = Reusable Logic (Like Decorators)
+```python
+# Python decorator/context manager pattern
+@with_database
+@with_logging
+def my_function():
+    pass
+```
+
+```typescript
+// React hooks (same reusability concept)
+const MyComponent = () => {
+    const { sections, updateSection } = useDocumentSections();  // Reusable logic
+    const [data, setData] = useLocalStorage('key', defaultValue);  // Reusable logic
+};
+```
+
+## 📝 Step-by-Step Practical Examples
+
+Let's work through real tasks you'll need to do, with both backend and frontend changes.
+
+### Example 1: Adding a New Section Type ("Executive Summary")
+
+**What you want**: Add an "Executive Summary" section that works like Background/Product/Usage.
+
+**Step 1: Backend Changes (Familiar Territory)**
+
+```python
+# backend/prompts/section_prompts.py - No changes needed!
+# The system already handles custom section types
+
+# backend/services/json_schema_service.py - No changes needed!
+# Unless it's a table section
+```
+
+**Step 2: Frontend Changes (New Territory)**
+
+```typescript
+// frontend/src/hooks/useDocumentSections.ts
+// Add to DEFAULT_SECTIONS array (like adding to a Python list)
+const DEFAULT_SECTIONS: DocumentSection[] = [
+  // ... existing sections
+  { 
+    id: '6',  // Next available ID
+    name: 'Executive Summary', 
+    type: 'executive_summary',  // Snake_case like Python
+    templateTag: 'executive_summary',  // For Word template
+    guidelines: getSectionDefaultGuidelines('executive_summary'),
+    data: { notes: '', draft: '', reviewNotes: '' }, 
+    isCompleted: false 
+  }
+];
+```
+
+**Step 3: Add AI Guidelines**
+
+```typescript
+// frontend/src/config/defaultGuidelines.ts
+// Add to DEFAULT_GUIDELINES object (like a Python dict)
+export const DEFAULT_GUIDELINES: Record<string, SectionGuidelines> = {
+  // ... existing guidelines
+  executive_summary: {
+    draft: `Create a compelling executive summary that:
+- Summarizes key points concisely
+- Highlights main recommendations
+- Provides clear value proposition`,
+    
+    review: `Review the executive summary for:
+- Clarity and impact
+- Completeness of key points
+- Professional tone and structure`,
+    
+    revision: `Improve the summary while maintaining its core message.`
+  }
+};
+```
+
+**Step 4: Test Your Changes**
+
+1. Restart frontend (`npm start`)
+2. Look for new "Executive Summary" tab
+3. Test the AI workflow: Notes → Draft → Review → Apply
+
+**Why this works**: The system is designed to handle new section types automatically!
+
+### Example 2: Adding a Table Column ("Priority" to Model Limitations)
+
+**What you want**: Add a "Priority" dropdown (High/Medium/Low) to the Model Limitations table.
+
+**⚠️ Critical**: Frontend and backend configurations MUST match exactly.
+
+**Step 1: Backend Schema (Like defining a database schema)**
+
+```python
+# backend/services/json_schema_service.py
 TABLE_CONFIGS = {
     'model_limitations': {
-        'description': 'Model limitations table...',
+        'description': 'Model limitations table with title, description, category, and priority',
         'columns': [
-            {'id': 'title', 'type': 'text', 'required': True},
-            {'id': 'category', 'type': 'select', 'options': ['Data', 'Technical']}
+            {'id': 'title', 'type': 'text', 'required': True, 'description': 'Brief, clear title of the limitation'},
+            {'id': 'description', 'type': 'text', 'description': 'Detailed explanation of the limitation'},
+            {'id': 'category', 'type': 'select', 'options': ['Data Limitations', 'Technical Limitations', 'Scope Limitations'], 'description': 'Classification category'},
+            # ADD THIS NEW COLUMN
+            {'id': 'priority', 'type': 'select', 'options': ['High', 'Medium', 'Low'], 'description': 'Priority level for addressing this limitation'}
         ]
     }
 }
 ```
 
-**Service Methods** (like typical Python class methods):
+**Step 2: Frontend Table Config (Must match backend exactly)**
+
+```typescript
+// frontend/src/config/tableConfigurations.ts
+export const MODEL_LIMITATIONS_CONFIG: TableConfiguration = {
+  columns: [
+    { id: 'title', label: 'Title', type: 'text', required: true, width: '200px' },
+    { id: 'description', label: 'Description', type: 'text', width: '350px' },
+    { id: 'category', label: 'Category', type: 'select', 
+      options: ['Data Limitations', 'Technical Limitations', 'Scope Limitations'], 
+      width: '180px' },
+    // ADD THIS NEW COLUMN (must match backend exactly!)
+    { id: 'priority', label: 'Priority', type: 'select',
+      options: ['High', 'Medium', 'Low'],  // Same options as backend!
+      width: '120px' }
+  ]
+};
+```
+
+**Step 3: Update Field Order (For consistent display)**
+
 ```python
-class JsonSchemaService:
-    @classmethod
-    def get_table_schema(cls, section_type: str) -> dict:
-        """Returns JSON schema for OpenAI structured output"""
-        config = cls.TABLE_CONFIGS[section_type]
-        # Build schema dict...
-        return schema
-```
-
-## ⚛️ Frontend Architecture (TypeScript React)
-
-Here's where it gets different from Python, but we'll explain it in familiar terms:
-
-### Directory Structure
-```
-frontend/src/
-├── components/          # UI components (like Python classes, but for display)
-│   ├── About.tsx       # About page component
-│   ├── Craft.tsx       # Main application shell
-│   ├── SectionWorkflow.tsx    # Text section handler
-│   ├── TableWorkflow.tsx      # Table section handler
-│   └── [other components]
-├── hooks/              # Reusable state logic (like Python utility functions)
-│   └── useDocumentSections.ts
-├── services/           # API communication (like requests.py)
-│   └── api.service.ts
-├── types/              # Type definitions (like Python dataclasses/TypedDict)
-│   └── document.types.ts
-├── config/             # Configuration files (like Python config.py)
-│   ├── defaultGuidelines.ts
-│   └── tableConfigurations.ts
-└── utils/              # Utility functions (like Python utils.py)
-```
-
-### Key Concepts for Python Developers
-
-#### 1. **Components = Python Classes with UI**
-Think of React components like Python classes that render HTML:
-
-```typescript
-// Like a Python class, but it returns HTML
-const DocumentSetup: React.FC = () => {
-  // State variables (like instance variables)
-  const [reviewId, setReviewId] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
-
-  // Methods (like class methods)
-  const handleLookupReview = async () => {
-    setLoading(true);
-    try {
-      const result = await lookupReview(reviewId);  // API call
-      setDocumentData(result);
-    } catch (error) {
-      console.error('Lookup failed:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Return HTML (like __str__ but returns UI)
-  return (
-    <div>
-      <TextField 
-        value={reviewId} 
-        onChange={(e) => setReviewId(e.target.value)} 
-      />
-      <Button onClick={handleLookupReview} disabled={loading}>
-        {loading ? 'Loading...' : 'Lookup Review'}
-      </Button>
-    </div>
-  );
-};
-```
-
-#### 2. **State = Instance Variables That Trigger Re-rendering**
-```typescript
-// Like Python instance variables, but when they change, UI updates
-const [sections, setSections] = useState<DocumentSection[]>(DEFAULT_SECTIONS);
-
-// Similar to: self.sections = new_sections, but triggers UI refresh
-setSections(newSections);
-```
-
-#### 3. **Props = Function Parameters**
-```typescript
-interface SectionWorkflowProps {
-  section: DocumentSection;           // Like function parameter
-  onSectionUpdate: (id: string, field: string, value: string) => void;  // Callback function
-}
-
-// Usage: <SectionWorkflow section={mySection} onSectionUpdate={myHandler} />
-```
-
-#### 4. **Hooks = Reusable Logic (Like Python Decorators/Context Managers)**
-```typescript
-// Custom hook - like a Python utility function that manages state
-export function useDocumentSections() {
-  const [sections, setSections] = useState<DocumentSection[]>(DEFAULT_SECTIONS);
-  
-  const updateSectionData = useCallback((sectionId: string, field: string, value: string) => {
-    setSections(prevSections =>
-      prevSections.map(section =>
-        section.id === sectionId
-          ? { ...section, data: { ...section.data, [field]: value } }
-          : section
-      )
-    );
-  }, []);
-
-  return { sections, updateSectionData };  // Return object with data & methods
-}
-
-// Usage in component:
-const { sections, updateSectionData } = useDocumentSections();
-```
-
-### Key Frontend Files Explained
-
-#### 1. **Main App Structure** (`Craft.tsx`)
-```typescript
-// Main application - like your Python main() function
-const Craft: React.FC = () => {
-  // Global state management
-  const { sections, updateSectionData, /* ... */ } = useDocumentSections();
-  const [documentData, setDocumentData] = useState<DocumentInfo | null>(null);
-
-  // Render tabbed interface
-  return (
-    <Container>
-      <Tabs value={activeTab} onChange={handleTabChange}>
-        <Tab label="Home" />
-        {sections.map(section => (
-          <Tab key={section.id} label={section.name} />
-        ))}
-      </Tabs>
-      
-      {/* Conditional rendering based on active tab */}
-      {activeTab === 0 && <DocumentSetup />}
-      {sections.map((section, index) => (
-        activeTab === index + 1 && (
-          section.type === 'model_limitations' || section.type === 'model_risk_issues' ? (
-            <TableWorkflow section={section} onSectionUpdate={updateSectionData} />
-          ) : (
-            <SectionWorkflow section={section} onSectionUpdate={updateSectionData} />
-          )
-        )
-      ))}
-    </Container>
-  );
-};
-```
-
-#### 2. **API Service** (`api.service.ts`)
-```typescript
-// Like your requests.py - handles HTTP communication
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8888';
-
-export const generateDraftFromNotes = async (data: {
-  notes: string;
-  sectionName: string;
-  sectionType: string;
-  guidelines?: string;
-}) => {
-  // Like requests.post() in Python
-  const response = await axios.post(`${API_BASE_URL}/api/generate-draft-from-notes`, data);
-  return response.data;
-};
-```
-
-#### 3. **Type Definitions** (`document.types.ts`)
-```typescript
-// Like Python dataclasses or TypedDict
-export interface DocumentSection {
-  id: string;
-  name: string;
-  type: string;
-  templateTag?: string;
-  guidelines?: SectionGuidelines;
-  data: SectionData;
-  isCompleted: boolean;
-  completionType?: 'normal' | 'empty';
-}
-
-export interface SectionData {
-  notes: string;
-  draft: string;
-  reviewNotes: string;
+# backend/services/generation_service.py
+FIELD_ORDER_MAPPING = {
+    'model_limitations': ['title', 'description', 'category', 'priority'],  # Add 'priority'
+    'model_risk_issues': ['title', 'description', 'category', 'importance']
 }
 ```
 
-## 🔌 Communication Layer
+**Step 4: Test Your Changes**
 
-The frontend and backend communicate via HTTP JSON APIs, just like any Python web service:
+1. Restart backend (`python server.py`)
+2. Restart frontend (`npm start`)
+3. Go to Model Limitations tab
+4. Add a new row - should see Priority dropdown
+5. Test AI generation - should populate Priority field
 
-### Request/Response Flow
+**Common Mistake**: Forgetting to match frontend and backend exactly. The AI will fail if schemas don't match!
+
+### Example 3: Customizing AI Behavior
+
+**What you want**: Make the Background section focus more on technical details.
+
+**Easy Method: Guidelines Only (No Code Changes)**
+
 ```typescript
-// Frontend makes request (like requests.post in Python)
-const generateDraft = async () => {
-  const requestData = {
-    notes: "User's input notes...",
-    sectionName: "Background",
-    sectionType: "background",
-    guidelines: "Custom AI instructions..."
-  };
-  
-  try {
-    const response = await axios.post('/api/generate-draft-from-notes', requestData);
-    const generatedContent = response.data;
-    // Update UI with response
-  } catch (error) {
-    // Handle error
+// frontend/src/config/defaultGuidelines.ts
+export const DEFAULT_GUIDELINES: Record<string, SectionGuidelines> = {
+  background: {
+    draft: `Create a technical background section that:
+- Provides detailed technical context and architecture
+- References specific technologies, frameworks, and methodologies
+- Explains technical challenges and constraints
+- Includes relevant technical specifications
+- Focuses on implementation details rather than business context`,
+    
+    review: `Analyze the draft for:
+- Technical accuracy and depth
+- Appropriate level of technical detail
+- Clear explanation of technical concepts
+- Relevance to technical audience`,
+    
+    revision: `Enhance technical details while maintaining clarity.`
   }
 };
 ```
 
+**Advanced Method: Custom Prompts (Backend Changes)**
+
 ```python
-# Backend handles request (familiar Tornado/Flask pattern)
-class GenerateDraftFromNotesHandler(tornado.web.RequestHandler):
-    async def post(self):
+# backend/prompts/section_prompts.py
+# You can override the base prompts for specific section types
+
+@classmethod
+def get_prompt(cls, operation: str, section_type: str, section_name: str, guidelines: str = None, **kwargs) -> str:
+    # Add custom logic for specific section types
+    if section_type == 'background' and operation == 'draft':
+        custom_prompt = f"""
+Write a highly technical background section for {section_name}.
+
+Focus on:
+- Technical architecture and design patterns
+- Implementation methodologies
+- Technical constraints and limitations
+- Technology stack details
+
+Notes: {kwargs.get('notes', '')}
+
+Generate technical content:
+"""
+        return custom_prompt + (f"\n\nGuidelines:\n{guidelines}" if guidelines else "")
+    
+    # Fall back to default behavior
+    return cls.BASE_PROMPTS.get(operation, cls.BASE_PROMPTS["draft"]).format(section_name=section_name, **kwargs)
+```
+
+### Example 4: Adding a New API Endpoint
+
+**What you want**: Add an endpoint to get AI suggestions for section names.
+
+**Step 1: Backend Handler (Like adding a Flask route)**
+
+```python
+# backend/server.py
+class SuggestSectionNamesHandler(ServiceHandler):
+    def post(self):
         try:
-            # Parse request (like request.json in Flask)
-            data = json.loads(self.request.body)
+            body = json.loads(self.request.body)
+            document_type = body.get('documentType', 'general')
+            existing_sections = body.get('existingSections', [])
             
-            # Process with service layer
-            result = await generation_service.generate_draft_from_notes(data)
+            # Use generation service
+            generation_service = GenerationService()
+            suggestions = generation_service.suggest_section_names(document_type, existing_sections)
             
-            # Return JSON response
-            self.write({"content": result})
-            
+            response = {"result": suggestions}
+            self.set_header("Content-Type", "application/json")
+            self.write(json.dumps(response))
         except Exception as e:
             self.set_status(500)
-            self.write({"error": str(e)})
+            self.write(json.dumps({"error": str(e)}))
+
+# Add to make_app() function
+def make_app():
+    return tornado.web.Application([
+        # ... existing routes
+        (r"/api/suggest-section-names", SuggestSectionNamesHandler),
+    ])
 ```
 
-### Key API Endpoints
-| Endpoint | Purpose | Frontend Trigger | Backend Service |
-|----------|---------|------------------|-----------------|
-| `/api/generate-draft-from-notes` | Create initial content | User clicks "Generate Draft" | `generation_service.py` |
-| `/api/generate-review` | Get AI feedback | User clicks "Generate Review" | `generation_service.py` |
-| `/api/generate-draft-from-review-with-diff` | Apply feedback | User clicks "Apply Review" | `generation_service.py` |
-| `/api/generate-document` | Create Word file | User clicks "Generate Document" | `document_generation_service.py` |
-| `/api/review-lookup` | Fetch metadata | User enters Review ID | `review_data_service.py` |
+**Step 2: Backend Service Method**
 
-## 🔄 Data Flow Walkthrough
-
-Let's trace a complete user interaction from frontend to backend and back:
-
-### Scenario: User Generates a Draft from Notes
-
-#### Step 1: User Input (Frontend)
-```typescript
-// SectionWorkflow.tsx - User types notes and clicks button
-const handleGenerateDraft = async () => {
-  setLoading(true);
-  try {
-    const result = await generateDraftFromNotes({
-      notes: section.data.notes,           // "Write about risk assessment..."
-      sectionName: section.name,           // "Background" 
-      sectionType: section.type,           // "background"
-      guidelines: section.guidelines?.draft  // AI instructions
-    });
-    
-    onSectionUpdate(section.id, 'draft', result);  // Update UI
-  } catch (error) {
-    // Handle error
-  } finally {
-    setLoading(false);
-  }
-};
-```
-
-#### Step 2: HTTP Request (API Layer)
-```typescript
-// api.service.ts - Makes HTTP call
-export const generateDraftFromNotes = async (data) => {
-  const response = await axios.post(`${API_BASE_URL}/api/generate-draft-from-notes`, {
-    notes: data.notes,
-    sectionName: data.sectionName,
-    sectionType: data.sectionType,
-    guidelines: data.guidelines
-  });
-  return response.data;  // Returns the generated content
-};
-```
-
-#### Step 3: Backend Processing (Python)
 ```python
-# app.py - Request handler
-class GenerateDraftFromNotesHandler(tornado.web.RequestHandler):
-    async def post(self):
-        data = json.loads(self.request.body)
-        result = await generation_service.generate_draft_from_notes(data)
-        self.write(result)
-
-# generation_service.py - Business logic
-async def generate_draft_from_notes(request_data):
-    notes = request_data.get('notes')
-    section_type = request_data.get('sectionType')
-    section_name = request_data.get('sectionName')
-    guidelines = request_data.get('guidelines')
+# backend/services/generation_service.py
+def suggest_section_names(self, document_type: str, existing_sections: list) -> list:
+    """Generate AI suggestions for section names"""
+    prompt = f"""
+    Suggest 3-5 additional section names for a {document_type} document.
     
-    # Build AI prompt
-    prompt = SectionPrompts.get_draft_prompt(
-        section_type, section_name, notes, guidelines
-    )
+    Existing sections: {', '.join(existing_sections)}
     
-    # Call OpenAI
-    content = await openai_tools.generate_content(prompt)
+    Provide concise, professional section names that would complement the existing sections.
+    Return as a JSON array of strings.
+    """
     
-    return content
+    try:
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": "You are a document structure expert. Return valid JSON only."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7
+        )
+        
+        suggestions = json.loads(response.choices[0].message.content.strip())
+        return suggestions if isinstance(suggestions, list) else []
+        
+    except Exception as e:
+        print(f"Error generating section name suggestions: {e}")
+        return ["Analysis", "Methodology", "Results", "Recommendations"]  # Fallback
 ```
 
-#### Step 4: UI Update (Frontend)
-```typescript
-// Back in SectionWorkflow.tsx - Update state triggers re-render
-onSectionUpdate(section.id, 'draft', result);
+**Step 3: Frontend API Function (Like requests.post())**
 
-// This calls the hook function:
-const updateSectionData = (sectionId: string, field: string, value: string) => {
-  setSections(prevSections =>
-    prevSections.map(section =>
-      section.id === sectionId
-        ? { ...section, data: { ...section.data, [field]: value } }
-        : section
-    )
-  );
+```typescript
+// frontend/src/services/api.service.ts
+export async function suggestSectionNames(documentType: string, existingSections: string[]): Promise<string[]> {
+    const response = await axiosInstance.post<ApiResponse<string[]>>('/api/suggest-section-names', {
+        documentType,
+        existingSections
+    });
+    return response.data.result;
+}
+```
+
+**Step 4: Use in Component**
+
+```typescript
+// frontend/src/components/Craft.tsx (in the add section dialog)
+const [suggestedNames, setSuggestedNames] = useState<string[]>([]);
+const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+
+const handleGetSuggestions = async () => {
+    setLoadingSuggestions(true);
+    try {
+        const suggestions = await suggestSectionNames('technical', sections.map(s => s.name));
+        setSuggestedNames(suggestions);
+    } catch (error) {
+        console.error('Failed to get suggestions:', error);
+    } finally {
+        setLoadingSuggestions(false);
+    }
 };
 
-// UI automatically re-renders with new draft content
+// In the JSX (HTML part):
+<Button onClick={handleGetSuggestions} disabled={loadingSuggestions}>
+    {loadingSuggestions ? 'Getting suggestions...' : 'AI Suggestions'}
+</Button>
+
+{suggestedNames.map(name => (
+    <Chip
+        key={name}
+        label={name}
+        onClick={() => setNewTabName(name)}
+        style={{ margin: '4px' }}
+    />
+))}
 ```
 
-## 💡 Key Concepts for Python Developers
+### Example 5: Converting Text Field to Dropdown
 
-### 1. **Async/Await (Same as Python!)**
+**What you want**: Change the "Category" field in Model Risk Issues from a dropdown to a text field (to allow custom categories).
+
+**Step 1: Backend Schema Change**
+
+```python
+# backend/services/json_schema_service.py
+TABLE_CONFIGS = {
+    'model_risk_issues': {
+        'columns': [
+            {'id': 'title', 'type': 'text', 'required': True, 'description': 'Risk title'},
+            {'id': 'description', 'type': 'text', 'description': 'Risk description'},
+            # CHANGE FROM 'select' TO 'text'
+            {'id': 'category', 'type': 'text', 'description': 'Risk category (custom entry allowed)'},
+            {'id': 'importance', 'type': 'select', 'options': ['Critical', 'High', 'Low'], 'description': 'Priority level'}
+        ]
+    }
+}
+```
+
+**Step 2: Frontend Configuration Change**
+
 ```typescript
-// TypeScript async/await works just like Python
-const fetchData = async () => {
-  try {
-    const response = await api.getData();  // Like await requests.get()
-    setData(response);
-  } catch (error) {
-    console.error(error);
-  }
+// frontend/src/config/tableConfigurations.ts
+export const MODEL_RISK_CONFIG: TableConfiguration = {
+  columns: [
+    { id: 'title', label: 'Title', type: 'text', required: true, width: '200px' },
+    { id: 'description', label: 'Description', type: 'text', width: '400px' },
+    // CHANGE FROM 'select' TO 'text' AND REMOVE 'options'
+    { id: 'category', label: 'Category', type: 'text', width: '150px' },
+    { id: 'importance', label: 'Importance', type: 'select', 
+      options: ['Critical', 'High', 'Low'], width: '120px' }
+  ]
 };
 ```
 
-### 2. **Immutable Updates (Different from Python)**
-```typescript
-// In React, you don't mutate state directly (unlike Python lists/dicts)
+**Step 3: Test**
+- Restart both servers
+- Go to Model Risk Issues tab
+- Category should now be a text input instead of dropdown
 
-// ❌ Don't do this (like list.append() in Python)
-sections.push(newSection);
+**Why this works**: The TableEditor component automatically renders different input types based on the `type` field!
 
-// ✅ Do this (create new array)
-setSections([...sections, newSection]);
+## ⚙️ Configuration System Explained
 
-// ❌ Don't modify object directly
-section.data.draft = newContent;
+Understanding which files control what behavior:
 
-// ✅ Create new object
-setSections(sections.map(s => 
-  s.id === sectionId 
-    ? { ...s, data: { ...s.data, draft: newContent } }
-    : s
-));
+### Frontend Configuration Files
+
+| File | Controls | Example Change |
+|------|----------|----------------|
+| `useDocumentSections.ts` | Default sections, section IDs | Add new section types |
+| `defaultGuidelines.ts` | AI behavior per section | Change how AI writes Background sections |
+| `tableConfigurations.ts` | Table columns, field types | Add dropdown options, change field types |
+| `modelConfigurations.ts` | Available AI models | Add new model options |
+
+### Backend Configuration Files
+
+| File | Controls | Example Change |
+|------|----------|----------------|
+| `section_prompts.py` | Base AI prompts | Change fundamental AI behavior |
+| `json_schema_service.py` | Table schemas for AI | Must match frontend table configs |
+| `generation_service.py` | AI model settings, field order | Change temperature, model selection |
+
+### Critical Synchronization Points
+
+These **MUST** match between frontend and backend:
+
+```python
+# backend/services/json_schema_service.py
+'model_limitations': {
+    'columns': [
+        {'id': 'title', 'type': 'text'},
+        {'id': 'category', 'type': 'select', 'options': ['Data', 'Technical']}
+    ]
+}
 ```
 
-### 3. **Event Handling (Like Python Callbacks)**
 ```typescript
-// Event handlers are like callback functions in Python
-const handleButtonClick = (event: React.MouseEvent) => {
-  // Do something when button is clicked
-  console.log('Button clicked!');
+// frontend/src/config/tableConfigurations.ts  
+export const MODEL_LIMITATIONS_CONFIG: TableConfiguration = {
+  columns: [
+    { id: 'title', type: 'text' },              // Same ID, same type
+    { id: 'category', type: 'select',           // Same ID, same type
+      options: ['Data', 'Technical'] }          // Exact same options!
+  ]
 };
-
-// Attach to UI element
-<Button onClick={handleButtonClick}>Click Me</Button>
-
-// With parameters (like Python lambda)
-<Button onClick={() => handleDelete(itemId)}>Delete</Button>
 ```
 
-### 4. **Conditional Rendering (Like Python if/else in templates)**
+**If they don't match**: AI generation will fail with validation errors.
+
+## 🐛 Debugging Guide for Python Developers
+
+### Browser DevTools = Python Debugger
+
+**Opening DevTools**: F12 key (like opening Python REPL)
+
+**Console Tab**: Your new `print()` statement
 ```typescript
-// Like Jinja2 {% if %} blocks
-return (
-  <div>
-    {loading ? (
-      <CircularProgress />  // Show spinner if loading
-    ) : (
-      <Button onClick={handleSubmit}>Submit</Button>  // Show button if not loading
-    )}
-    
-    {/* Like {% for item in items %} */}
-    {sections.map(section => (
-      <SectionComponent key={section.id} section={section} />
-    ))}
-  </div>
-);
+console.log("Debug info:", variable);  // Same as print(f"Debug info: {variable}")
+console.error("Something went wrong:", error);  // Same as print("ERROR:", error)
 ```
 
-## 🛠️ Development Workflow
+**Network Tab**: See all HTTP requests (like watching your API calls)
+- Look for failed requests (red status codes)
+- Check request/response data
+- Verify correct endpoints are being called
 
-### Setting Up Development Environment
+### Common Error Patterns
 
-1. **Backend Setup** (Familiar Python workflow):
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # or venv\Scripts\activate on Windows
-pip install -r requirements.txt
-python app.py
+**1. "Cannot read property 'name' of undefined"**
+```python
+# Python equivalent
+user = None
+print(user.name)  # AttributeError: 'NoneType' object has no attribute 'name'
 ```
 
-2. **Frontend Setup** (Node.js/npm - like pip but for JavaScript):
-```bash
-cd frontend
-npm install          # Like pip install -r requirements.txt
-npm start           # Like python app.py
-```
-
-### Making Changes
-
-#### Backend Changes (Python - You Know This!)
-1. Edit Python files in `backend/services/`
-2. Test with Python directly or via API calls
-3. Restart `python app.py` to reload changes
-
-#### Frontend Changes (New Territory)
-1. Edit TypeScript files in `frontend/src/`
-2. Save file - changes appear automatically (hot reload)
-3. Check browser console for errors (like Python traceback)
-
-### Development Tools
-
-#### Backend (Familiar Tools)
-- **Python debugger**: `import pdb; pdb.set_trace()`
-- **Logging**: `print()` or proper `logging` module
-- **API testing**: Postman, curl, or Python `requests`
-
-#### Frontend (New Tools)
-- **Browser DevTools**: F12 → Console tab (like Python REPL)
-- **React DevTools**: Browser extension for inspecting components
-- **TypeScript errors**: Show up in VS Code and browser console
-
-## 🐛 Debugging & Troubleshooting
-
-### Common Issues for Python Developers
-
-#### 1. **"Cannot read property of undefined"**
 ```typescript
-// Python equivalent: AttributeError: 'NoneType' object has no attribute 'name'
-// TypeScript: Cannot read property 'name' of undefined
-
-// Problem:
-const name = user.name;  // user might be undefined
+// TypeScript - same error, different message
+const user = undefined;
+console.log(user.name);  // Cannot read property 'name' of undefined
 
 // Solution: Optional chaining (like Python's getattr with default)
-const name = user?.name;  // Returns undefined if user is undefined
-const name = user?.name || 'Default Name';  // With default value
+console.log(user?.name);  // Returns undefined instead of crashing
+console.log(user?.name || 'Default Name');  // With default value
 ```
 
-#### 2. **State Not Updating**
+**2. "State not updating" (Common React gotcha)**
 ```typescript
-// Problem: Mutating state directly (like modifying Python list in-place)
-sections[0].data.draft = newContent;  // UI won't update
+// ❌ Wrong (mutating state directly)
+sections[0].data.draft = newContent;  // UI won't update!
 
-// Solution: Immutable update
+// ✅ Right (creating new objects)
 setSections(sections.map(s => 
   s.id === targetId 
     ? { ...s, data: { ...s.data, draft: newContent } }
@@ -602,200 +636,396 @@ setSections(sections.map(s =>
 ));
 ```
 
-#### 3. **Infinite Re-renders**
-```typescript
-// Problem: Function recreated on every render
-const MyComponent = () => {
-  const handleClick = () => {  // New function every render
-    console.log('clicked');
-  };
-  
-  return <Button onClick={handleClick}>Click</Button>;
-};
+Think of it like: "In Python, if you modify a variable, nothing automatically happens. In React, you need to 'announce' the change using the setter function."
 
-// Solution: useCallback (like memoization)
-const MyComponent = () => {
-  const handleClick = useCallback(() => {
-    console.log('clicked');
-  }, []);  // Dependencies array - like functools.lru_cache
-  
-  return <Button onClick={handleClick}>Click</Button>;
-};
+**3. "API call failing"**
+```typescript
+// Check the browser Network tab for:
+// - Correct URL being called
+// - Request data being sent
+// - Response status and error message
+
+// Add debugging:
+console.log('Making API call with:', requestData);
+try {
+  const response = await api.generateDraft(requestData);
+  console.log('API response:', response);
+} catch (error) {
+  console.error('API error:', error.response?.data || error.message);
+}
 ```
 
-### Debugging Steps
+**4. "Configuration not working"**
+- Check that you restarted both frontend and backend
+- Verify frontend and backend table configs match exactly
+- Check for typos in section types and field names
+- Look for JSON syntax errors in configuration files
 
-#### Backend Issues (Standard Python Debugging)
-1. Check Python console for errors
-2. Add `print()` statements or use debugger
-3. Test endpoints with curl/Postman
-4. Check environment variables and API keys
+### Debugging Workflow
 
-#### Frontend Issues
-1. **Open Browser DevTools** (F12 → Console)
-2. **Check for TypeScript errors** (red squiggly lines in VS Code)
-3. **Add console.log()** (like Python `print()`)
-4. **Use React DevTools** to inspect component state
-5. **Check Network tab** for failed API calls
+1. **Check Browser Console** (F12 → Console) for error messages
+2. **Add console.log()** statements (like Python print())
+3. **Check Network tab** for API call failures
+4. **Verify configuration files** for typos and mismatches
+5. **Restart both servers** after configuration changes
 
-## 📝 Common Tasks
+## 🔧 Development Workflow
 
-### Adding a New API Endpoint
+### Setting Up for Development
 
-#### 1. Backend (Python - Familiar)
+1. **Backend Setup** (Familiar)
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+2. **Frontend Setup** (New)
+```bash
+cd frontend
+npm install  # Like pip install -r requirements.txt
+```
+
+### Making Changes Efficiently
+
+1. **Backend Changes**: Edit Python files, restart `python server.py`
+2. **Frontend Changes**: Edit TypeScript files, save (auto-reloads!)
+3. **Configuration Changes**: Edit config files, restart both servers
+
+### Hot Reload Explained
+
+**Backend**: Like Python - you need to restart the server to see changes
+**Frontend**: Magic! Save a file, browser automatically updates
+
+### Testing Your Changes
+
+1. **Manual Testing**: Use the application in your browser
+2. **Check Console**: Look for JavaScript errors
+3. **Test AI Operations**: Notes → Draft → Review → Apply
+4. **Test Table Operations**: Add/edit/delete rows
+5. **Test Document Generation**: Create a Word document
+
+### Useful Commands
+
+```bash
+# Backend
+python server.py                    # Start server
+python -c "import json; print(json.loads('...'))"  # Validate JSON
+
+# Frontend  
+npm start                          # Start development server
+npm run build                      # Build for production
+npm run test                       # Run tests (if any)
+
+# Both
+git status                         # Check what files changed
+git diff                          # See actual changes
+```
+
+## ❗ Common Pitfalls & Solutions
+
+### 1. Configuration Mismatch (Most Common!)
+
+**Problem**: AI generation fails with validation errors
+**Cause**: Frontend and backend table configurations don't match
+
+```typescript
+// Frontend says column is 'select' with options A, B, C
+{ id: 'category', type: 'select', options: ['A', 'B', 'C'] }
+```
+
 ```python
-# app.py - Add route
-(r"/api/my-new-endpoint", MyNewHandler),
-
-# Add handler class
-class MyNewHandler(tornado.web.RequestHandler):
-    async def post(self):
-        data = json.loads(self.request.body)
-        result = await my_service.process_data(data)
-        self.write({"result": result})
-
-# services/my_service.py - Business logic
-async def process_data(data):
-    # Your Python logic here
-    return processed_result
+# Backend says column is 'text' 
+{'id': 'category', 'type': 'text'}  # MISMATCH!
 ```
 
-#### 2. Frontend (TypeScript)
+**Solution**: Always update both files together. Check spelling and options exactly.
+
+### 2. Forgetting to Restart Servers
+
+**Problem**: Changes don't appear
+**Cause**: Backend changes require restart, configuration changes require both restarts
+
+**Solution**: When in doubt, restart both servers.
+
+### 3. Case Sensitivity Issues
+
+**Problem**: API calls fail or sections don't work
+**Cause**: JavaScript is case-sensitive
+
 ```typescript
-// api.service.ts - Add API function
-export const callMyNewEndpoint = async (data: MyDataType) => {
-  const response = await axios.post(`${API_BASE_URL}/api/my-new-endpoint`, data);
-  return response.data;
+// These are different!
+sectionType: 'background'      // ✅ Correct
+sectionType: 'Background'      // ❌ Won't work
+```
+
+**Solution**: Use snake_case for section types, just like Python.
+
+### 4. Async/Await Confusion
+
+```typescript
+// ❌ Wrong - not waiting for API call
+const handleSubmit = () => {
+    const result = generateDraft(data);  // This returns a Promise, not the result!
+    console.log(result);  // Will print Promise object
 };
 
-// Use in component
-const handleAction = async () => {
-  try {
-    const result = await callMyNewEndpoint({ /* data */ });
-    // Handle result
-  } catch (error) {
-    console.error('API call failed:', error);
+// ✅ Right - using async/await (same as Python!)
+const handleSubmit = async () => {
+    const result = await generateDraft(data);  // Wait for result
+    console.log(result);  // Will print actual result
+};
+```
+
+### 5. State Mutation (React-Specific)
+
+**Problem**: UI doesn't update when data changes
+**Cause**: Modifying state objects directly
+
+```typescript
+// ❌ Wrong - mutating state directly
+section.data.draft = newContent;
+
+// ✅ Right - creating new objects
+setSectionData({...section.data, draft: newContent});
+```
+
+**Think of it**: React needs to detect changes. If you modify an object in-place, React doesn't know it changed.
+
+## 📋 Quick Reference Tables
+
+### Python → JavaScript/React Equivalents
+
+| Python Concept | JavaScript/React | Example |
+|----------------|------------------|---------|
+| `print(value)` | `console.log(value)` | Debug output |
+| `def function(param):` | `const function = (param) => {` | Function definition |
+| `self.variable = value` | `const [variable, setVariable] = useState(value)` | Instance variable |
+| `try/except` | `try/catch` | Error handling |
+| `f"{variable}"` | `` `${variable}` `` | String interpolation |
+| `for item in items:` | `{items.map(item => <Component />)}` | Iteration |
+| `if condition:` | `{condition && <Component />}` | Conditional rendering |
+| `import module` | `import { Component } from 'module'` | Imports |
+| `dict.get('key', default)` | `dict?.key ?? default` | Safe property access |
+
+### File Responsibility Mapping
+
+| Task | Backend File | Frontend File |
+|------|--------------|---------------|
+| Add section type | `useDocumentSections.ts` | `useDocumentSections.ts` |
+| Change AI behavior | `section_prompts.py` OR `defaultGuidelines.ts` | `defaultGuidelines.ts` |
+| Add table column | `json_schema_service.py` | `tableConfigurations.ts` |
+| Add API endpoint | `server.py` | `api.service.ts` |
+| Change AI model | `generation_service.py` | `modelConfigurations.ts` |
+| Add table section | `json_schema_service.py` + `section_prompts.py` | `tableConfigurations.ts` + `useDocumentSections.ts` |
+
+### Common Patterns
+
+| Pattern | Python | TypeScript |
+|---------|--------|------------|
+| Check if exists | `if item:` | `if (item) {` |
+| Default value | `value or 'default'` | `value || 'default'` |
+| Safe access | `getattr(obj, 'prop', default)` | `obj?.prop ?? default` |
+| List comprehension | `[x.name for x in items]` | `items.map(x => x.name)` |
+| Dictionary merge | `{**dict1, **dict2}` | `{...dict1, ...dict2}` |
+
+## 🎓 Advanced Topics
+
+### Adding New Table Section Types
+
+Want to add a "Project Tasks" table? Here's the full process:
+
+**1. Backend Schema**
+```python
+# backend/services/json_schema_service.py
+TABLE_CONFIGS = {
+    # ... existing configs
+    'project_tasks': {
+        'description': 'Project tasks with status and deadlines',
+        'columns': [
+            {'id': 'task', 'type': 'text', 'required': True, 'description': 'Task name'},
+            {'id': 'status', 'type': 'select', 'options': ['Not Started', 'In Progress', 'Complete'], 'description': 'Current status'},
+            {'id': 'deadline', 'type': 'date', 'description': 'Due date'}
+        ]
+    }
+}
+```
+
+**2. Register as Table Section**
+```python
+# backend/prompts/section_prompts.py
+TABLE_SECTIONS = {'model_limitations', 'model_risk_issues', 'project_tasks'}
+```
+
+**3. Frontend Table Config**
+```typescript
+// frontend/src/config/tableConfigurations.ts
+export const PROJECT_TASKS_CONFIG: TableConfiguration = {
+  columns: [
+    { id: 'task', label: 'Task', type: 'text', required: true, width: '300px' },
+    { id: 'status', label: 'Status', type: 'select', 
+      options: ['Not Started', 'In Progress', 'Complete'], width: '150px' },
+    { id: 'deadline', label: 'Deadline', type: 'date', width: '120px' }
+  ]
+};
+
+// Add to getTableConfiguration function
+export function getTableConfiguration(sectionType: string): TableConfiguration {
+  switch (sectionType) {
+    case 'model_limitations':
+      return MODEL_LIMITATIONS_CONFIG;
+    case 'model_risk_issues':
+      return MODEL_RISK_CONFIG;
+    case 'project_tasks':
+      return PROJECT_TASKS_CONFIG;  // Add this line
+    default:
+      throw new Error(`Unknown table section type: ${sectionType}`);
+  }
+}
+```
+
+**4. Add to Default Sections**
+```typescript
+// frontend/src/hooks/useDocumentSections.ts
+const DEFAULT_SECTIONS: DocumentSection[] = [
+  // ... existing sections
+  { 
+    id: '7', 
+    name: 'Project Tasks', 
+    type: 'project_tasks',
+    templateTag: 'project_tasks',
+    guidelines: getSectionDefaultGuidelines('project_tasks'),
+    data: { notes: '', draft: '{"rows":[]}', reviewNotes: '' },  // Note the JSON format
+    isCompleted: false 
+  }
+];
+```
+
+**5. Add Guidelines**
+```typescript
+// frontend/src/config/defaultGuidelines.ts
+export const DEFAULT_GUIDELINES: Record<string, SectionGuidelines> = {
+  // ... existing guidelines
+  project_tasks: {
+    draft: `Generate a comprehensive project tasks table with:
+- Clear, actionable task descriptions
+- Appropriate status assignments
+- Realistic deadline estimates
+- IMPORTANT: Return data in JSON format: {"rows": [{"task": "Task name", "status": "Not Started", "deadline": "2025-01-01"}]}`,
+    
+    review: `Review the project tasks for:
+- Task completeness and clarity
+- Realistic status and deadlines
+- Proper prioritization`,
+    
+    revision: `Improve the tasks based on feedback while maintaining JSON structure.`
   }
 };
 ```
 
-### Adding a New UI Component
+### Custom Validation Rules
+
+Want to add custom validation for table data?
 
 ```typescript
-// components/MyNewComponent.tsx
-interface MyNewComponentProps {
-  title: string;
-  onSave: (data: string) => void;
-}
-
-const MyNewComponent: React.FC<MyNewComponentProps> = ({ title, onSave }) => {
-  const [inputValue, setInputValue] = useState('');
-
-  const handleSubmit = () => {
-    onSave(inputValue);
-  };
-
-  return (
-    <Box>
-      <Typography variant="h6">{title}</Typography>
-      <TextField 
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-      />
-      <Button onClick={handleSubmit}>Save</Button>
-    </Box>
-  );
+// frontend/src/config/tableConfigurations.ts
+export const PROJECT_TASKS_CONFIG: TableConfiguration = {
+  columns: [
+    { 
+      id: 'deadline', 
+      label: 'Deadline', 
+      type: 'date', 
+      width: '120px',
+      validate: (value: string) => {
+        const date = new Date(value);
+        const today = new Date();
+        if (date < today) {
+          return 'Deadline cannot be in the past';
+        }
+        return null;  // No error
+      }
+    }
+  ]
 };
-
-export default MyNewComponent;
-
-// Usage in parent component:
-<MyNewComponent 
-  title="My Form" 
-  onSave={(data) => console.log('Saved:', data)} 
-/>
 ```
 
-### Modifying Existing Functionality
+### Performance Considerations
 
-#### 1. **Find the Component**: Look in `frontend/src/components/`
-#### 2. **Find the Backend Logic**: Look in `backend/services/`
-#### 3. **Trace the Data Flow**:
-   - User interaction (component)
-   - API call (api.service.ts)
-   - Backend handler (app.py)
-   - Business logic (services/)
-   - Response back to frontend
+**Large Documents**: 
+- The system stores everything in browser localStorage
+- Very large documents (>50 sections) may be slow
+- Consider pagination for tables with many rows
 
-## 🎓 Learning Resources for Python Developers
+**AI Response Time**:
+- GPT-4 calls take 3-10 seconds
+- Show loading indicators for better UX
+- Consider implementing request timeouts
 
-### Essential Concepts to Learn
-1. **JavaScript/TypeScript Basics**:
-   - Variables: `let`, `const` (like Python variables)
-   - Functions: `function` and arrow functions `() => {}`
-   - Objects: `{key: value}` (like Python dicts)
-   - Arrays: `[1, 2, 3]` (like Python lists)
+## 📚 Resources & Next Steps
 
-2. **React Fundamentals**:
-   - Components (like Python classes that return HTML)
-   - State (like instance variables that trigger UI updates)
-   - Props (like function parameters)
-   - Hooks (like decorators/context managers for state)
+### Essential Learning (If You Want to Go Deeper)
 
-3. **TypeScript Benefits**:
-   - Static typing (like Python type hints but enforced)
-   - Better IDE support and error catching
-   - Interfaces (like Python dataclasses)
+**Minimal JavaScript/TypeScript** (1-2 hours):
+- Variables: `const`, `let`
+- Functions: Arrow functions `() => {}`
+- Objects and arrays: `{key: value}` and `[1, 2, 3]`
+- Async/await: Same as Python!
+
+**React Basics** (2-3 hours):
+- Components as functions that return HTML
+- State with `useState`
+- Event handlers: `onClick`, `onChange`
+- Conditional rendering: `{condition && <div>}</div>}`
+
+**Material-UI** (30 minutes):
+- Pre-built components: `<Button>`, `<TextField>`, `<Table>`
+- Just look at existing code for examples
 
 ### Recommended Learning Path
-1. **JavaScript ES6+ Basics** (1-2 days)
-2. **TypeScript Fundamentals** (1 day)
-3. **React Basics** (2-3 days)
-4. **Material-UI Components** (1 day)
-5. **Practice with CRAFT codebase** (ongoing)
 
-### Quick Reference
+1. **Start with Configuration Changes** (0 code, just editing config files)
+2. **Try Adding New Sections** (mostly configuration)
+3. **Modify Table Columns** (configuration + understanding schema sync)
+4. **Add Simple API Endpoints** (mostly backend work you already know)
+5. **Customize AI Behavior** (prompts and guidelines)
 
-#### Python → TypeScript/React Equivalents
-| Python | TypeScript/React |
-|--------|------------------|
-| `class MyClass:` | `const MyComponent: React.FC = () => {` |
-| `self.variable = value` | `const [variable, setVariable] = useState(value)` |
-| `def method(self, param):` | `const method = (param) => {` |
-| `if condition:` | `{condition && <Component />}` |
-| `for item in items:` | `{items.map(item => <Component key={item.id} />)}` |
-| `try/except` | `try/catch` |
-| `import module` | `import { Component } from 'module'` |
-| `print(value)` | `console.log(value)` |
+### Useful Tools
 
-## 🔍 Understanding the CRAFT Workflow
+**VS Code Extensions**:
+- **TypeScript Hero**: Auto-imports
+- **Bracket Pair Colorizer**: Match brackets like Python indentation
+- **ES7+ React/Redux/React-Native snippets**: Code shortcuts
 
-Now that you understand the technical pieces, here's how they come together in CRAFT's document generation workflow:
+**Browser Extensions**:
+- **React Developer Tools**: Inspect React components (like Python debugger)
 
-1. **Document Setup** (DocumentSetup.tsx ↔ review_data_service.py)
-2. **Section Creation** (useDocumentSections.ts hook manages state)
-3. **Content Generation** (SectionWorkflow.tsx ↔ generation_service.py ↔ OpenAI)
-4. **Review Cycle** (AI feedback ↔ diff visualization ↔ user approval)
-5. **Table Management** (TableWorkflow.tsx ↔ json_schema_service.py)
-6. **Document Export** (FileGenerationModal.tsx ↔ document_generation_service.py)
+### Learning Resources
 
-Each step involves the frontend managing UI state and the backend processing business logic, with clean API boundaries between them.
+**Don't Over-Learn**: You don't need to become a React expert. Focus on:
+- Understanding component structure
+- Reading existing code patterns
+- Following configuration examples
 
----
+**When Stuck**: 
+- Look at existing similar code in the project
+- Copy and modify existing patterns
+- Focus on configuration over custom code
 
-## 🚀 You're Ready to Contribute!
+## 🎯 Final Tips for Python Developers
 
-As a Python developer, you already understand:
-- ✅ The backend architecture (it's just Python!)
-- ✅ API design and HTTP communication
-- ✅ Service-oriented architecture
-- ✅ Error handling and debugging
+1. **Leverage Your Strengths**: You understand the backend completely. Use that knowledge.
 
-You just need to learn:
-- 🎯 React component patterns (think: Python classes that return HTML)
-- 🎯 TypeScript syntax (Python with static typing for the web)
-- 🎯 State management (like instance variables that trigger UI updates)
+2. **Configuration Over Code**: Most changes are in config files, not complex React code.
 
-Start by making small changes to existing components, and gradually work up to creating new features. The Python backend will feel like home, and the frontend will become familiar with practice!
+3. **Pattern Recognition**: Once you see the patterns (components, props, state), it's just Python with different syntax.
 
-Happy coding! 🎉
+4. **Start Small**: Begin with configuration changes, work up to more complex modifications.
+
+5. **Use the Browser**: DevTools console is your friend, just like Python REPL.
+
+6. **Don't Fear the Frontend**: It's not magic - it's just Python concepts with curly braces instead of colons.
+
+Remember: You're not learning to be a frontend developer. You're learning just enough to be productive with this specific codebase. Focus on understanding the patterns and configurations that matter for CRAFT.
+
+Happy coding! 🚀
